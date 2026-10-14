@@ -1,0 +1,1609 @@
+<title>Volume Benda Putar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap">
+<style>
+/* Layout: header bar · one slide at a time (visual left 58%, reasoning right 42%) · footer navigation with 24-segment progress */
+:root{
+  --bg:#FFFFFF; --surface:#F2F6F5; --surface-2:#E4EDEB; --ink:#15272A; --muted:#55686B; --line:#CFDCDA; --grid:#E3EBEA;
+  --brand:#2B7A6E; --brand-ink:#FFFFFF; --brand-soft:#DCEDE9;
+  --curve:#1F5FBF; --region-fill:rgba(31,95,191,.17); --overlay-fill:rgba(19,141,90,.16);
+  --slice:#D97B12; --axis-rot:#C0392B; --r-inner:#8E44AD; --height:#138D5A;
+  --ok:#137A4E; --ok-soft:#E2F3EA; --warn:#9A6208; --warn-soft:#FBF0DA; --err:#B3261E; --err-soft:#FBE5E2;
+  --solid3d:#7F9DB5; --surface3d:#F2F6F5; --axis3d:#8A9C9F;
+  --font-display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F191B; --surface:#162325; --surface-2:#1D2E31; --ink:#E3EEEC; --muted:#9BB0B1; --line:#2B3F42; --grid:#1F3033;
+  --brand:#5CB5A6; --brand-ink:#0B1A19; --brand-soft:#1B3A35;
+  --curve:#77A6F2; --region-fill:rgba(119,166,242,.2); --overlay-fill:rgba(76,195,138,.2);
+  --slice:#F0A04B; --axis-rot:#F27A6C; --r-inner:#C590E4; --height:#4CC38A;
+  --ok:#4CC38A; --ok-soft:#15332A; --warn:#E8B451; --warn-soft:#382C13; --err:#F27A6C; --err-soft:#3C1E1B;
+  --solid3d:#6D8CA6; --surface3d:#162325; --axis3d:#6C8285; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0F191B; --surface:#162325; --surface-2:#1D2E31; --ink:#E3EEEC; --muted:#9BB0B1; --line:#2B3F42; --grid:#1F3033;
+  --brand:#5CB5A6; --brand-ink:#0B1A19; --brand-soft:#1B3A35;
+  --curve:#77A6F2; --region-fill:rgba(119,166,242,.2); --overlay-fill:rgba(76,195,138,.2);
+  --slice:#F0A04B; --axis-rot:#F27A6C; --r-inner:#C590E4; --height:#4CC38A;
+  --ok:#4CC38A; --ok-soft:#15332A; --warn:#E8B451; --warn-soft:#382C13; --err:#F27A6C; --err-soft:#3C1E1B;
+  --solid3d:#6D8CA6; --surface3d:#162325; --axis3d:#6C8285; color-scheme:dark }
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.55;-webkit-text-size-adjust:100%}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.app{display:flex;flex-direction:column;height:100%}
+.topbar{display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--bg);flex:none}
+.brandmark{display:flex;align-items:baseline;gap:10px;min-width:0}
+.brandmark b{font-family:var(--font-display);font-size:19px;white-space:nowrap}
+.brandmark span{color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .grow{flex:1}
+main{flex:1;overflow-y:auto;overflow-x:hidden;padding-inline:20px;padding-block:20px 32px}
+.slide{max-width:1280px;margin:0 auto}
+.footbar{flex:none;display:flex;align-items:center;gap:12px;padding:10px 20px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--bg)}
+.segs{flex:1;display:grid;grid-template-columns:repeat(24,1fr);gap:3px;min-width:0}
+.seg{height:10px;border:0;border-radius:3px;background:var(--surface-2);padding:0;cursor:pointer}
+.seg.v{background:color-mix(in srgb,var(--brand) 38%,var(--surface-2))}
+.seg.d{background:var(--brand)}
+.seg.cur{outline:2px solid var(--ink);outline-offset:1px}
+.counter{font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;font-size:15px;letter-spacing:.01em}
+.btn:hover{background:var(--surface)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.sm{min-height:34px;padding:4px 10px;font-size:14px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.caps{text-transform:uppercase;font-size:13.5px;letter-spacing:.05em}
+
+/* slide head */
+.sh{display:grid;gap:4px;margin-bottom:18px;max-width:72ch}
+.eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);font-weight:700}
+.eyebrow .src{color:var(--muted);font-weight:600;letter-spacing:.04em}
+h1,h2,h3{font-family:var(--font-display);text-wrap:balance;margin:0;line-height:1.2}
+h2{font-size:clamp(24px,2.6vw,31px)}
+h3{font-size:19px;margin-bottom:6px}
+.lead{margin:4px 0 0;color:var(--muted);font-size:17.5px}
+p{margin:0 0 10px}
+.cols{display:grid;grid-template-columns:minmax(0,1.38fr) minmax(0,1fr);gap:24px;align-items:start}
+.stack{display:grid;gap:16px;min-width:0}
+.card{background:var(--surface);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.card.plain{background:transparent;border:1px solid var(--line)}
+.formula{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;font-size:20px;overflow-x:auto}
+.formula.big{font-size:23px}
+.formula .cap{display:block;font-size:13px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-bottom:4px}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--brand-soft);color:var(--brand)}
+.tag.add{background:var(--warn-soft);color:var(--warn)}
+.tag.ctx{background:var(--overlay-fill);color:var(--height)}
+details.note{font-size:14.5px;color:var(--muted);border-left:3px solid var(--line);padding:4px 0 4px 12px}
+details.note summary{cursor:pointer;font-weight:600}
+.k-R{color:var(--curve);font-weight:700}.k-r{color:var(--r-inner);font-weight:700}.k-h{color:var(--height);font-weight:700}.k-s{color:var(--slice);font-weight:700}.k-ax{color:var(--axis-rot);font-weight:700}
+ul.clean,ol.clean{margin:0;padding-left:20px;display:grid;gap:4px}
+
+/* segmented */
+.segc{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.segc button{border:0;background:var(--bg);padding:6px 12px;min-height:36px;cursor:pointer;font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.segc button+button{border-left:1px solid var(--line)}
+.segc button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+
+/* lab */
+.lab{display:grid;gap:12px;min-width:0}
+.views{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.views.one{grid-template-columns:1fr}
+.view{margin:0;background:var(--surface);border-radius:var(--radius);overflow:hidden;position:relative;min-width:0}
+.view figcaption{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px 12px 0}
+.view figcaption i{font-style:normal;font-weight:600;letter-spacing:0;text-transform:none}
+.view svg.g2{display:block;width:100%;height:auto;touch-action:none;cursor:crosshair}
+.c3d{width:100%;aspect-ratio:420/360;position:relative;touch-action:none;cursor:grab}
+.c3d canvas{display:block;width:100%!important;height:100%!important}
+.no3d{padding:24px;color:var(--muted);font-size:14px}
+.ctrl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.ctrl label.rng{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;flex:1 1 220px;min-width:0}
+.ctrl input[type=range]{flex:1;min-width:0;accent-color:var(--slice);height:30px}
+.ctrl .lbl{font-size:14px;color:var(--muted);font-weight:700}
+.layers{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:13.5px;background:var(--bg);cursor:pointer;min-height:32px}
+.chip[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand);color:var(--ink)}
+.read{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 16px;margin:0;font-variant-numeric:tabular-nums;background:var(--surface);border-radius:var(--radius);padding:12px 16px}
+.read div{min-width:0}
+.read dt{font-size:13.5px;color:var(--muted);font-weight:600}
+.read dd{margin:0;font-size:16.5px;font-weight:600}
+
+/* steps */
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.step{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;background:var(--bg)}
+.step.locked{opacity:.5}
+.step.locked .sbody{display:none}
+.step.active{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.step.done{background:var(--surface)}
+.shead{display:flex;gap:10px;align-items:baseline}
+.snum{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13.5px;font-weight:700;background:var(--surface-2);font-variant-numeric:tabular-nums}
+.step.done .snum{background:var(--brand);color:var(--brand-ink)}
+.stitle{font-weight:700}
+.sbody{margin-top:8px;display:grid;gap:10px}
+.opts{display:grid;gap:6px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:42px;font-size:16px}
+.opt[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
+.opt.okk{border-color:var(--ok);background:var(--ok-soft)}
+.opt.bad{border-color:var(--err);background:var(--err-soft)}
+.inrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inrow .pre{font-weight:600}
+.inp{border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-height:42px;min-width:0;width:200px;max-width:100%;background:var(--bg);font-size:17px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.fb{border-radius:8px;padding:8px 12px;font-size:15.5px}
+.fb:empty{display:none}
+.fb.ok{background:var(--ok-soft);color:var(--ink);border-left:4px solid var(--ok)}
+.fb.warn{background:var(--warn-soft);border-left:4px solid var(--warn)}
+.fb.err{background:var(--err-soft);border-left:4px solid var(--err)}
+.fb b.st{margin-right:6px}
+.fb.ok b.st{color:var(--ok)}.fb.warn b.st{color:var(--warn)}.fb.err b.st{color:var(--err)}
+.hints{font-size:15px;border-left:3px solid var(--slice);padding-left:10px;display:grid;gap:4px}
+.hints:empty{display:none}
+.sol{font-size:16px;border-top:1px dashed var(--line);padding-top:8px}
+.sol:empty{display:none}
+
+/* builder */
+.builder{display:grid;gap:12px}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.slot{display:grid;gap:4px;font-size:14px;font-weight:700;color:var(--muted)}
+.slot select{min-height:42px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:var(--bg);font-size:16px;font-weight:600;color:var(--ink)}
+.slot.okk select{border-color:var(--ok);background:var(--ok-soft)}
+.slot.bad select{border-color:var(--err);background:var(--err-soft)}
+
+/* cover */
+.cover{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:32px;align-items:center;min-height:70vh}
+.cover h1{font-size:clamp(34px,4.6vw,56px);letter-spacing:-.01em}
+.cover .sub{font-size:19px;color:var(--muted)}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-size:15.5px;margin:16px 0}
+.meta dt{color:var(--muted)}.meta dd{margin:0;font-weight:600}
+.map{display:grid;gap:6px;margin-top:8px}
+.map button{display:flex;gap:12px;align-items:baseline;text-align:left;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:8px 12px;cursor:pointer}
+.map button:hover{background:var(--surface)}
+.map b{font-family:var(--font-display);min-width:28px;color:var(--brand)}
+
+/* flow */
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14.5px}
+.flow span.n{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 10px;font-weight:600}
+.flow span.n.hi{border-color:var(--slice);background:color-mix(in srgb,var(--slice) 14%,var(--bg))}
+.flow span.a{color:var(--muted)}
+table.t{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:15.5px}
+table.t th,table.t td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t th{font-size:14px;font-weight:700;color:var(--muted)}
+table.t tr.hi td{background:var(--brand-soft)}
+table.t tbody tr.click{cursor:pointer}
+table.t tbody tr.click:hover td{background:var(--surface)}
+.tw{overflow-x:auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--bg);border-radius:8px 8px 0 0;padding:8px 14px;cursor:pointer;font-weight:600}
+.tabs button[aria-selected="true"]{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+
+/* quiz */
+.qdots{display:flex;gap:6px;flex-wrap:wrap}
+.qdot{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}
+.qdot.cur{border-color:var(--ink);border-width:2px}
+.qdot.okk{background:var(--ok);color:var(--bg);border-color:var(--ok)}
+.qdot.bad{background:var(--err);color:var(--bg);border-color:var(--err)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.thumbs .opt svg{display:block;width:100%;height:auto}
+.dnd{display:grid;gap:10px}
+.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:8px;border:1px dashed var(--line);border-radius:8px}
+.item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 10px;cursor:grab;font-weight:600;font-size:15px;min-height:44px}
+.item svg{width:46px;height:34px}
+.item[aria-pressed="true"]{border-color:var(--slice);box-shadow:0 0 0 2px var(--slice)}
+.targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.target{border:1px solid var(--line);border-radius:8px;padding:8px;min-height:92px;display:grid;gap:6px;align-content:start;background:var(--surface);cursor:pointer}
+.target b{font-size:14px}
+.target.okk{border-color:var(--ok)}.target.bad{border-color:var(--err)}
+
+/* menu */
+dialog.menu{border:0;border-radius:14px;padding:0;max-width:min(720px,calc(100vw - 32px));width:100%;max-height:min(86vh,800px);background:var(--bg);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog.menu::backdrop{background:rgba(10,20,22,.45)}
+.mhead{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg)}
+.mbody{padding:12px 20px 20px;display:grid;gap:14px;overflow:auto}
+.mpart h4{margin:0 0 6px;font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--brand)}
+.mpart ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.mpart button{width:100%;display:flex;gap:10px;align-items:baseline;text-align:left;border:0;background:transparent;padding:6px 8px;border-radius:6px;cursor:pointer}
+.mpart button:hover,.mpart button.cur{background:var(--surface)}
+.mpart .no{font-variant-numeric:tabular-nums;color:var(--muted);width:24px}
+.mpart .st{margin-left:auto;font-size:13px;color:var(--muted)}
+.mpart .st.d{color:var(--ok);font-weight:700}
+
+.tree svg{width:100%;height:auto;display:block}
+.tree .nd rect{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.tree .nd.on rect{stroke:var(--brand);stroke-width:2.2;fill:var(--brand-soft)}
+.tree .nd.leaf.on rect{stroke:var(--slice);fill:color-mix(in srgb,var(--slice) 16%,var(--bg))}
+.tree text{fill:var(--ink);font-size:13px}
+.tree .ed{stroke:var(--line);stroke-width:1.4;fill:none}
+.tree .ed.on{stroke:var(--brand);stroke-width:2.6}
+.tree .el{fill:var(--muted);font-size:12px;font-weight:700}
+.ring svg{width:100%;max-width:260px;height:auto;display:block;margin:0 auto}
+.sflow{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;counter-reset:f}
+.sflow div{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-weight:600;font-size:15px;background:var(--bg)}
+.sflow div::before{counter-increment:f;content:counter(f);display:block;font-size:12px;color:var(--brand);font-weight:700}
+textarea.refl{width:100%;min-height:130px;border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg);resize:vertical}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;font-variant-numeric:tabular-nums}
+.stats div{background:var(--surface);border-radius:8px;padding:10px 12px}
+.stats b{display:block;font-size:24px;font-family:var(--font-display)}
+.stats span{font-size:13px;color:var(--muted)}
+mjx-container[display="true"]{margin:.4em 0!important;overflow-x:auto;overflow-y:hidden}
+
+@media (max-width:1100px){ .cols{grid-template-columns:minmax(0,1fr)} .cover{grid-template-columns:minmax(0,1fr);min-height:0} }
+@media (max-width:640px){
+  body{font-size:16px}
+  .views{grid-template-columns:1fr}
+  .topbar,.footbar{padding-inline:12px;gap:8px}
+  main{padding-inline:16px}
+  .brandmark span{display:none}
+  .segs{gap:2px}.seg{height:8px}
+  .btn.navtxt span{display:none}
+}
+@media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto!important;transition:none!important} }
+</style>
+
+<script>
+window.MathJax = { tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]}, svg:{fontCache:'global'}, options:{enableMenu:false}, startup:{typeset:false} };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brandmark"><b>Volume Benda Putar</b><span id="partLabel">Kalkulus 2 · TIN613022 · Pertemuan 3</span></div>
+    <div class="grow"></div>
+    <button class="btn sm" id="btnMenu" aria-haspopup="dialog">Menu</button>
+  </header>
+  <main id="main" tabindex="-1"></main>
+  <footer class="footbar">
+    <button class="btn sm navtxt" id="btnPrev" aria-label="Slide sebelumnya">‹ <span>Previous</span></button>
+    <div class="segs" id="segs" aria-label="Kemajuan belajar"></div>
+    <span class="counter" id="counter">01 / 24</span>
+    <button class="btn sm primary navtxt" id="btnNext" aria-label="Slide berikutnya"><span>Next</span> ›</button>
+  </footer>
+</div>
+<dialog class="menu" id="menu" aria-label="Daftar slide">
+  <div class="mhead"><b>Daftar slide</b><button class="btn sm" id="btnMenuClose">Tutup</button></div>
+  <div class="mbody" id="menuBody"></div>
+</dialog>
+
+<script>
+"use strict";
+/* =========================================================
+   UTIL
+   ========================================================= */
+const PI = Math.PI, sq = Math.sqrt, TAU = 2*Math.PI;
+let _uid = 0; const uid = (p='u') => p + (++_uid);
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const RM = window.matchMedia ? matchMedia('(prefers-reduced-motion: reduce)').matches : false;
+function fmt(v, d=3){ if(!isFinite(v)) return '—'; return Number(v).toLocaleString('id-ID',{maximumFractionDigits:d, minimumFractionDigits:0}); }
+function cssVar(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* MathJax */
+const MJ = { ready:false, q:[] };
+function typeset(node){
+  if(!node) return;
+  if(MJ.ready){ try{ MathJax.typesetClear([node]); }catch(e){} MathJax.typesetPromise([node]).catch(e=>console.warn(e)); }
+  else MJ.q.push(node);
+}
+function initMJ(){
+  if(window.MathJax && MathJax.startup && MathJax.startup.promise){
+    MathJax.startup.promise.then(()=>{ MJ.ready=true; MJ.q.splice(0).forEach(typeset); });
+  }
+}
+
+/* storage */
+const STORE_KEY = 'vbp-modul-v1';
+function loadP(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }catch(e){ return {}; } }
+const P = Object.assign({visited:[], done:[], hints:0, quiz:null, reflection:''}, loadP());
+function saveP(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(P)); }catch(e){} }
+function markDone(id){ if(!P.done.includes(id)){ P.done.push(id); saveP(); App.refreshProgress(); } }
+function addHint(){ P.hints++; saveP(); }
+
+/* expression parsing (answers) */
+function toFn(raw, v){
+  let s = String(raw ?? '').toLowerCase().trim();
+  if(!s) return null;
+  s = s.replace(/[−–—]/g,'-').replace(/[×·∙]/g,'*').replace(/÷/g,'/').replace(/,/g,'.').replace(/π/g,'pi')
+       .replace(/²/g,'^2').replace(/³/g,'^3').replace(/⁴/g,'^4').replace(/⁵/g,'^5').replace(/\s+/g,'')
+       .replace(/akar/g,'sqrt').replace(/√\(/g,'sqrt(').replace(/√(pi|[a-z]|[0-9.]+)/g,'sqrt($1)');
+  s = s.replace(/(\d|\))(?=[a-z(])/g,'$1*').replace(/\)(?=\d)/g,')*');
+  s = s.replace(/(pi|[xy])(?=[\d(xy]|pi|sqrt)/g,'$1*');
+  let t = s.replace(/sqrt|pi/g,''); if(v) t = t.replace(new RegExp('['+v+']','g'),'');
+  if(/[^0-9.+\-*/^()]/.test(t)) return null;
+  s = s.replace(/(^|[(*/^+\-])-/g,'$1(-1)*').replace(/\^/g,'**');
+  try{
+    const f = new Function(v||'_','pi','sqrt','"use strict";return ('+s+');');
+    const g = (val)=>f(val, Math.PI, Math.sqrt);
+    const test = g(1.37); if(typeof test!=='number') return null;
+    return g;
+  }catch(e){ return null; }
+}
+function sameFn(f, g, dom=[0.2,1.9]){
+  if(!f||!g) return false;
+  for(let i=0;i<7;i++){
+    const x = dom[0] + (dom[1]-dom[0])*(i+0.37)/7;
+    const a=f(x), b=g(x);
+    if(!isFinite(a)||!isFinite(b)) return false;
+    if(Math.abs(a-b) > 1e-6*Math.max(1,Math.abs(b))) return false;
+  }
+  return true;
+}
+function evalNum(raw){ const f = toFn(raw,''); if(!f) return null; const v = f(0); return isFinite(v)? v : null; }
+
+/* =========================================================
+   CASES — daerah, sumbu, fungsi irisan
+   (t = koordinat sepanjang sumbu, r = jarak dari sumbu)
+   ========================================================= */
+function cleanPoly(p){
+  const o=[]; for(const q of p){ const l=o[o.length-1]; if(!l || Math.hypot(q[0]-l[0],q[1]-l[1])>1e-9) o.push(q); }
+  if(o.length>2 && Math.hypot(o[0][0]-o[o.length-1][0], o[0][1]-o[o.length-1][1])<1e-9) o.pop();
+  return o;
+}
+function samp(f,a,b,N=96){ const o=[]; for(let i=0;i<=N;i++){ const x=a+(b-a)*i/N; o.push([x,f(x)]); } return o; }
+function under(f,a,b){ return cleanPoly([[a,0],[b,0], ...samp(f,a,b).reverse()]); }
+function bisect(F, a, b, target){ let fa=F(a)-target; for(let k=0;k<60;k++){ const m=(a+b)/2, fm=F(m)-target; if((fm>0)===(fa>0)){ a=m; fa=fm; } else b=m; } return (a+b)/2; }
+const fq = x=>x*x, fc = x=>2*x*x - x*x*x;
+
+const CASES = {
+  A:{ name:'y = x², 0 ≤ x ≤ 2, sumbu-x', win:{x:[-0.7,2.7],y:[-0.9,4.6]}, poly:under(fq,0,2),
+      curves:[{pts:samp(fq,-0.25,2.15), label:'y = x²', at:[0.55,2.6]}], bounds:[{x:2,label:'x = 2'}],
+      axis:{dir:'x',c:0,label:'sumbu-x'}, disk:{t:[0,2], ri:()=>0, ro:t=>t*t}, shell:{p:[0,4], lo:p=>sq(p), hi:()=>2}, V:32*PI/5, Vs:'32π/5' },
+  B:{ name:'y = x², x = 0, y = 4, sumbu-y', win:{x:[-0.7,2.7],y:[-0.9,4.6]}, poly:cleanPoly([[0,0], ...samp(fq,0,2), [0,4]]),
+      curves:[{pts:samp(fq,-0.25,2.15), label:'y = x² ⇔ x = √y', at:[1.55,1.6]}], bounds:[{y:4,label:'y = 4'}],
+      axis:{dir:'y',c:0,label:'sumbu-y'}, disk:{t:[0,4], ri:()=>0, ro:t=>sq(t)}, shell:{p:[0,2], lo:p=>p*p, hi:()=>4}, V:8*PI, Vs:'8π' },
+  C:{ name:'y = x², 0 ≤ x ≤ 2, garis y = −1', win:{x:[-0.7,2.7],y:[-2.1,4.6]}, poly:under(fq,0,2),
+      curves:[{pts:samp(fq,-0.25,2.15), label:'y = x²', at:[0.5,2.6]}], bounds:[{x:2,label:'x = 2'}],
+      axis:{dir:'x',c:-1,label:'y = −1'}, disk:{t:[0,2], ri:()=>1, ro:t=>t*t+1}, shell:{p:[1,5], lo:p=>sq(Math.max(0,p-1)), hi:()=>2}, V:176*PI/15, Vs:'176π/15' },
+  D:{ name:'y = 2x² − x³, y = 0, sumbu-y', win:{x:[-0.6,2.5],y:[-0.45,1.75]}, poly:under(fc,0,2),
+      curves:[{pts:samp(fc,-0.2,2.12), label:'y = 2x² − x³', at:[1.25,1.42]}], bounds:[],
+      axis:{dir:'y',c:0,label:'sumbu-y'},
+      disk:{t:[0,32/27], ri:t=>bisect(fc,0,4/3,t), ro:t=>bisect(x=>-fc(x),4/3,2,-t)},
+      shell:{p:[0,2], lo:()=>0, hi:p=>fc(p)}, V:16*PI/5, Vs:'16π/5' },
+  E:{ name:'y = x², 0 ≤ x ≤ 2, sumbu-y', win:{x:[-0.7,2.7],y:[-0.9,4.6]}, poly:under(fq,0,2),
+      curves:[{pts:samp(fq,-0.25,2.15), label:'y = x²', at:[0.55,2.6]}], bounds:[{x:2,label:'x = 2'}],
+      axis:{dir:'y',c:0,label:'sumbu-y'}, disk:{t:[0,4], ri:t=>sq(t), ro:()=>2}, shell:{p:[0,2], lo:()=>0, hi:p=>p*p}, V:8*PI, Vs:'8π' },
+};
+/* generic shapes (slide 05, 09) */
+const g1 = x=>1.7+0.45*Math.sin(1.6*x-0.4);
+const fO = x=>2.3+0.35*Math.sin(2*x), fI = x=>1.0+0.25*Math.sin(2*x+1);
+CASES.G1 = { name:'f(x), sumbu-x', win:{x:[-0.4,3.1],y:[-0.5,2.8]}, poly:under(g1,0.6,2.6),
+  curves:[{pts:samp(g1,0.45,2.75), label:'f(x)', at:[1.0,2.45]}], bounds:[{x:0.6,label:'a'},{x:2.6,label:'b'}],
+  axis:{dir:'x',c:0,label:'sumbu-x'}, disk:{t:[0.6,2.6], ri:()=>0, ro:g1}, shell:null };
+CASES.G1y = { name:'g(y), sumbu-y', win:{x:[-0.5,2.8],y:[-0.4,3.1]},
+  poly:cleanPoly([[0,0.6], ...samp(g1,0.6,2.6).map(([y,x])=>[x,y]), [0,2.6]]),
+  curves:[{pts:samp(g1,0.45,2.75).map(([y,x])=>[x,y]), label:'x = g(y)', at:[1.75,0.25]}], bounds:[{y:0.6,label:'c'},{y:2.6,label:'d'}],
+  axis:{dir:'y',c:0,label:'sumbu-y'}, disk:{t:[0.6,2.6], ri:()=>0, ro:g1}, shell:null };
+CASES.G2 = { name:'f(x), g(x), sumbu-x', win:{x:[-0.4,3.2],y:[-0.5,3.1]},
+  poly:cleanPoly([...samp(fI,0.6,2.8), ...samp(fO,0.6,2.8).reverse()]),
+  curves:[{pts:samp(fO,0.45,2.95), label:'f(x)', at:[1.05,2.85]},{pts:samp(fI,0.45,2.95), label:'g(x)', at:[1.6,0.45]}],
+  bounds:[{x:0.6,label:'a'},{x:2.8,label:'b'}], axis:{dir:'x',c:0,label:'sumbu-x'}, disk:{t:[0.6,2.8], ri:fI, ro:fO}, shell:null };
+CASES.G2y = { name:'w(y), v(y), sumbu-y', win:{x:[-0.5,3.1],y:[-0.4,3.2]},
+  poly:cleanPoly([...samp(fI,0.6,2.8).map(([y,x])=>[x,y]), ...samp(fO,0.6,2.8).reverse().map(([y,x])=>[x,y])]),
+  curves:[{pts:samp(fO,0.45,2.95).map(([y,x])=>[x,y]), label:'x = w(y)', at:[2.45,0.25]},{pts:samp(fI,0.45,2.95).map(([y,x])=>[x,y]), label:'x = v(y)', at:[0.15,3.0]}],
+  bounds:[{y:0.6,label:'c'},{y:2.8,label:'d'}], axis:{dir:'y',c:0,label:'sumbu-y'}, disk:{t:[0.6,2.8], ri:fI, ro:fO}, shell:null };
+function caseK(k){
+  return { name:'y = x², garis y = k', win:{x:[-0.7,2.7],y:[-2.4,4.6]}, poly:under(fq,0,2),
+    curves:[{pts:samp(fq,-0.25,2.15), label:'y = x²', at:[0.5,2.6]}], bounds:[{x:2,label:'x = 2'}],
+    axis:{dir:'x',c:k,label: k===0?'sumbu-x':'y = '+fmt(k,2).replace('-','−')},
+    disk:{t:[0,2], ri:()=>-k, ro:t=>t*t-k}, shell:null, V:PI*(32/5 - 16*k/3), k };
+}
+CASES.lens = { name:'y = x dan y = x², sumbu-x', win:{x:[-0.3,1.35],y:[-0.3,1.3]},
+  poly:cleanPoly([...samp(fq,0,1), ...samp(x=>x,0,1).reverse()]),
+  curves:[{pts:samp(x=>x,-0.1,1.2), label:'y = x', at:[0.2,0.62]},{pts:samp(fq,-0.1,1.1), label:'y = x²', at:[0.82,0.25]}],
+  bounds:[], axis:{dir:'x',c:0,label:'sumbu-x'}, disk:{t:[0,1], ri:t=>t*t, ro:t=>t}, shell:{p:[0,1], lo:p=>p, hi:p=>sq(p)}, V:2*PI/15, Vs:'2π/15' };
+CASES.L1 = { name:'y = √x, 0 ≤ x ≤ 4, sumbu-x', win:{x:[-0.6,4.5],y:[-0.6,2.6]}, poly:under(sq,0,4),
+  curves:[{pts:samp(sq,0,4.3), label:'y = √x', at:[1.0,1.55]}], bounds:[{x:4,label:'x = 4'}],
+  axis:{dir:'x',c:0,label:'sumbu-x'}, disk:{t:[0,4], ri:()=>0, ro:sq}, shell:{p:[0,2], lo:p=>p*p, hi:()=>4}, V:8*PI, Vs:'8π' };
+const fL3 = x=>x-x*x;
+CASES.L3 = { name:'y = x − x², sumbu-y', win:{x:[-0.25,1.2],y:[-0.08,0.36]}, poly:under(fL3,0,1),
+  curves:[{pts:samp(fL3,-0.05,1.06), label:'y = x − x²', at:[0.62,0.31]}], bounds:[],
+  axis:{dir:'y',c:0,label:'sumbu-y'}, disk:{t:[0,0.25], ri:t=>(1-sq(Math.max(0,1-4*t)))/2, ro:t=>(1+sq(Math.max(0,1-4*t)))/2},
+  shell:{p:[0,1], lo:()=>0, hi:fL3}, V:PI/6, Vs:'π/6' };
+CASES.Q4 = { name:'y = x, 0 ≤ x ≤ 3, sumbu-x', win:{x:[-0.5,3.4],y:[-0.5,3.4]}, poly:under(x=>x,0,3),
+  curves:[{pts:samp(x=>x,-0.2,3.3), label:'y = x', at:[1.0,1.9]}], bounds:[{x:3,label:'x = 3'}],
+  axis:{dir:'x',c:0,label:'sumbu-x'}, disk:{t:[0,3], ri:()=>0, ro:t=>t}, shell:null, V:9*PI, Vs:'9π' };
+function shapeCase(kind, axisKind){
+  let poly, name;
+  if(kind==='semi'){ poly=[]; for(let i=0;i<=72;i++){ const a=-PI/2+PI*i/72; poly.push([1.5*Math.cos(a),1.5+1.5*Math.sin(a)]); } poly=cleanPoly(poly); name='setengah lingkaran'; }
+  else if(kind==='rect'){ poly=[[0,0],[1.2,0],[1.2,2],[0,2]]; name='persegi panjang'; }
+  else { poly=[[0,0],[1.5,0],[0,2.2]]; name='segitiga siku-siku'; }
+  const axis = axisKind==='v' ? {dir:'y',c:0,label:'sisi tegak (sumbu-y)'} : {dir:'x',c:0,label:'sisi alas (sumbu-x)'};
+  return { name, win:{x:[-0.6,2.4],y:[-0.5,3.4]}, poly, curves:[], bounds:[], outline:true, axis, disk:null, shell:null };
+}
+
+/* region in (t,r) and back */
+function toTR(c, p){ return c.axis.dir==='x' ? [p[0], p[1]-c.axis.c] : [p[1], p[0]-c.axis.c]; }
+function trToXY(c, t, r){ return c.axis.dir==='x' ? [t, c.axis.c + r] : [c.axis.c + r, t]; }
+function trMap(c){ const k=c.axis.c; return c.axis.dir==='x' ? (t,r,f)=>[t, k + r*Math.cos(f), r*Math.sin(f)] : (t,r,f)=>[k + r*Math.cos(f), t, r*Math.sin(f)]; }
+function numV(c){ if(c.V!=null) return c.V; const m=c.disk; if(!m) return null; let s=0; const n=4000, [a,b]=m.t, d=(b-a)/n; for(let i=0;i<n;i++){ const u=a+(i+.5)*d; s+=PI*(m.ro(u)**2-m.ri(u)**2)*d; } return s; }
+
+/* =========================================================
+   3D VIEWER (Three.js)
+   ========================================================= */
+function revolveInto(out, poly, theta, segs, map, caps=true){
+  const n = poly.length;
+  for(let i=0;i<n;i++){
+    const p=poly[i], q=poly[(i+1)%n];
+    if(Math.abs(p[1])<1e-9 && Math.abs(q[1])<1e-9) continue;
+    const base = out.pos.length/3;
+    for(let k=0;k<=segs;k++){ const f=theta*k/segs; out.pos.push(...map(p[0],p[1],f), ...map(q[0],q[1],f)); }
+    for(let k=0;k<segs;k++){ const a=base+2*k; out.idx.push(a,a+2,a+1, a+1,a+2,a+3); }
+  }
+  if(caps && theta < TAU-1e-6){
+    const tris = THREE.ShapeUtils.triangulateShape(poly.map(v=>new THREE.Vector2(v[0],v[1])), []);
+    for(const f of [0, theta]){
+      const base = out.pos.length/3;
+      for(const v of poly) out.pos.push(...map(v[0],v[1],f));
+      for(const t of tris) out.idx.push(base+t[0], base+t[1], base+t[2]);
+    }
+  }
+}
+function geoFrom(out){ const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(out.pos,3)); g.setIndex(out.idx); g.computeVertexNormals(); return g; }
+function textSprite(txt, color, scale){
+  const cv=document.createElement('canvas'); cv.width=cv.height=96; const x=cv.getContext('2d');
+  x.font='italic 600 58px "Source Serif 4", Georgia, serif'; x.fillStyle=color; x.textAlign='center'; x.textBaseline='middle'; x.fillText(txt,48,52);
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv), transparent:true, depthTest:false})); s.scale.set(scale,scale,1); return s;
+}
+const VIEWERS = new Set();
+class Viewer3D{
+  constructor(host, opt={}){ this.host=host; this.opt=opt; this.mounted=false; this.ticks=[]; this.th=opt.th ?? 0.74; this.ph=opt.ph ?? 1.1; this.dist=9; }
+  mount(){
+    if(this.mounted) return true;
+    if(!window.THREE){ this.host.innerHTML='<p class="no3d">Visualisasi 3D memerlukan koneksi internet untuk memuat pustaka Three.js. Grafik dua dimensi dan semua latihan tetap berfungsi.</p>'; return false; }
+    try{ this.renderer = new THREE.WebGLRenderer({antialias:true}); }
+    catch(e){ this.host.innerHTML='<p class="no3d">Peramban ini tidak mendukung WebGL, sehingga benda 3D tidak dapat ditampilkan. Grafik dua dimensi dan latihan tetap berfungsi.</p>'; return false; }
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+    this.host.appendChild(this.renderer.domElement);
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(36, 1, 0.05, 600); this.scene.add(this.camera);
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.72); dl.position.set(3,4,6); this.camera.add(dl);
+    this.target = this.target || new THREE.Vector3();
+    this.bindEvents();
+    this.ro = new ResizeObserver(()=>this.resize()); this.ro.observe(this.host); this.resize();
+    this.applyTheme(); this.mounted = true; VIEWERS.add(this);
+    const loop = (t)=>{ this.raf=requestAnimationFrame(loop); for(const f of this.ticks) f(t); if(this.opt.autoRotate && !this.drag && !RM) this.th += 0.0022; this.place(); this.renderer.render(this.scene, this.camera); };
+    this.raf = requestAnimationFrame(loop);
+    return true;
+  }
+  bindEvents(){
+    const el = this.renderer.domElement, pts = new Map(); let pinch0=0, dist0=0;
+    el.addEventListener('pointerdown', e=>{ el.setPointerCapture(e.pointerId); pts.set(e.pointerId,[e.clientX,e.clientY]); this.drag=true; if(pts.size===2){ const [a,b]=[...pts.values()]; pinch0=Math.hypot(a[0]-b[0],a[1]-b[1]); dist0=this.dist; } });
+    el.addEventListener('pointermove', e=>{ if(!pts.has(e.pointerId)) return; const pr=pts.get(e.pointerId); const dx=e.clientX-pr[0], dy=e.clientY-pr[1]; pts.set(e.pointerId,[e.clientX,e.clientY]);
+      if(pts.size===2){ const [a,b]=[...pts.values()]; const d=Math.hypot(a[0]-b[0],a[1]-b[1]); if(pinch0>0) this.dist=clamp(dist0*pinch0/d, this.home.dist*0.3, this.home.dist*3); }
+      else { this.th += dx*0.009; this.ph = clamp(this.ph - dy*0.009, 0.12, PI-0.12); } });
+    const up = e=>{ pts.delete(e.pointerId); if(!pts.size) this.drag=false; pinch0=0; };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('wheel', e=>{ e.preventDefault(); this.dist = clamp(this.dist*Math.exp(e.deltaY*0.0012), this.home.dist*0.3, this.home.dist*3); }, {passive:false});
+  }
+  fit(center, size){ this.target = this.target || new THREE.Vector3(); if(window.THREE) this.target.set(center[0],center[1],center[2]); this.dist = Math.max(size,0.5)*(this.opt.zoom||2.0); this.home={th:this.opt.th ?? 0.74, ph:this.opt.ph ?? 1.1, dist:this.dist}; this._center=center; }
+  resetView(){ if(!this.home) return; this.th=this.home.th; this.ph=this.home.ph; this.dist=this.home.dist; }
+  place(){ const s=Math.sin(this.ph), T=this.target; this.camera.position.set(T.x+this.dist*s*Math.cos(this.th), T.y+this.dist*Math.cos(this.ph), T.z+this.dist*s*Math.sin(this.th)); this.camera.lookAt(T); }
+  resize(){ if(!this.renderer) return; const w=this.host.clientWidth||300, h=this.host.clientHeight||w*0.86; this.renderer.setSize(w,h,false); this.camera.aspect=w/h; this.camera.updateProjectionMatrix(); }
+  applyTheme(){ if(this.renderer) this.renderer.setClearColor(new THREE.Color(cssVar('--surface3d')||'#F2F6F5')); this.onTheme && this.onTheme(); }
+  clear(obj){ if(!obj) return; obj.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); } }); if(obj.parent) obj.parent.remove(obj); }
+  unmount(){
+    if(!this.mounted) return; cancelAnimationFrame(this.raf); this.ro && this.ro.disconnect();
+    this.scene.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); } });
+    this.renderer.dispose(); try{ this.renderer.forceContextLoss(); }catch(e){}
+    this.renderer.domElement.remove(); this.renderer=null; this.scene=null; this.mounted=false; VIEWERS.delete(this);
+  }
+}
+function axesGroup(bmin, bmax, labelScale){
+  const g = new THREE.Group(), col = new THREE.Color(cssVar('--axis3d')||'#8A9C9F');
+  const m = new THREE.LineBasicMaterial({color:col});
+  const add=(a,b)=>{ const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]); g.add(new THREE.Line(geo,m)); };
+  add([bmin[0],0,0],[bmax[0],0,0]); add([0,bmin[1],0],[0,bmax[1],0]); add([0,0,bmin[2]],[0,0,bmax[2]]);
+  const ink = cssVar('--muted')||'#55686B';
+  const sx=textSprite('x',ink,labelScale); sx.position.set(bmax[0]+labelScale*0.5,0,0); g.add(sx);
+  const sy=textSprite('y',ink,labelScale); sy.position.set(0,bmax[1]+labelScale*0.5,0); g.add(sy);
+  const sz=textSprite('z',ink,labelScale); sz.position.set(0,0,bmax[2]+labelScale*0.5); g.add(sz);
+  return g;
+}
+
+/* =========================================================
+   LAB — grafik 2D + benda 3D + kontrol irisan
+   ========================================================= */
+class Lab{
+  constructor(host, o={}){
+    this.host=host; this.o=o; this.id=uid('lab');
+    this.c=o.case; this.method=o.method||'disk'; this.n=o.n||10; this.mode=o.mode||'smooth'; this.s=o.s ?? 0.55;
+    this.showSolid=!!o.showSolid; this.showElement=o.showElement!==false; this.thS=TAU; this.thE=TAU;
+    this.layers={grid:true,region:true,slice:true,labels:true,axis:true};
+    this.overlay=null; this.anims=[];
+    const C = o.controls===false ? {} : Object.assign({pos:true,n:true,mode:true,rotate:true,rotateSlice:true,layers:true,reset:true}, o.controls||{});
+    this.C=C; this.build(); this.render2D(); this.renderRead();
+  }
+  build(){
+    const o=this.o, C=this.C;
+    const v2 = o.only3D ? '' : `<figure class="view"><figcaption>Bidang xy <i>${o.drag===false?'':'seret untuk menggeser irisan'}</i></figcaption><svg class="g2" viewBox="0 0 420 360" role="img" aria-label="Grafik daerah pada bidang xy"></svg></figure>`;
+    const v3 = o.only2D ? '' : `<figure class="view"><figcaption>Benda putar 3D <i>seret untuk memutar · gulir untuk zoom</i></figcaption><div class="c3d"></div></figure>`;
+    let ctrl='';
+    if(C.pos) ctrl+=`<label class="rng"><span class="lbl">Posisi irisan</span><input type="range" id="${this.id}-pos" min="0" max="999" value="${Math.round(this.s*999)}" aria-label="Posisi irisan"></label>`;
+    if(C.n) ctrl+=`<div><span class="lbl">Jumlah irisan n</span><div class="segc" data-k="n">${[4,10,20,50,100].map(v=>`<button type="button" data-v="${v}" aria-pressed="${v===this.n}">${v}</button>`).join('')}</div></div>`;
+    if(C.mode) ctrl+=`<div><span class="lbl">Tampilan benda</span><div class="segc" data-k="mode"><button type="button" data-v="smooth" aria-pressed="${this.mode==='smooth'}">Halus</button><button type="button" data-v="slices" aria-pressed="${this.mode==='slices'}">Irisan</button></div></div>`;
+    let btns='';
+    if(C.rotate) btns+=`<button type="button" class="btn sm caps primary" data-a="rot">Putar daerah</button>`;
+    if(C.rotateSlice) btns+=`<button type="button" class="btn sm caps" data-a="rotslice">Putar irisan</button>`;
+    if(C.reset && !o.only2D) btns+=`<button type="button" class="btn sm" data-a="view">Reset pandangan</button>`;
+    if(C.reset) btns+=`<button type="button" class="btn sm" data-a="reset">Ulangi simulasi</button>`;
+    let lay='';
+    if(C.layers && !o.only3D) lay=`<div class="layers" aria-label="Tampilkan atau sembunyikan elemen grafik">${[['grid','Grid'],['region','Daerah'],['slice','Irisan'],['labels','Label'],['axis','Sumbu putar']].map(([k,t])=>`<button type="button" class="chip" data-l="${k}" aria-pressed="true">${t}</button>`).join('')}</div>`;
+    this.host.innerHTML = `<div class="lab"><div class="views${(o.only3D||o.only2D)?' one':''}">${v2}${v3}</div>
+      ${ctrl?`<div class="ctrl">${ctrl}</div>`:''}${btns?`<div class="btns">${btns}</div>`:''}${lay}${o.readout===false?'':`<dl class="read" aria-live="polite"></dl>`}</div>`;
+    this.svg=$('svg.g2',this.host); this.c3=$('.c3d',this.host); this.readEl=$('dl.read',this.host);
+    const pos=$(`#${this.id}-pos`); if(pos) pos.addEventListener('input',()=>this.set({s:pos.value/999}));
+    $$('.segc',this.host).forEach(sg=>sg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; const k=sg.dataset.k; const v = k==='n'? +b.dataset.v : b.dataset.v; this.set({[k]:v}); }));
+    $$('[data-a]',this.host).forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.a;
+      if(a==='rot') this.sweepSolid(); else if(a==='rotslice') this.sweepElement(); else if(a==='view') this.viewer&&this.viewer.resetView(); else if(a==='reset') this.reset(); }));
+    $$('.chip[data-l]',this.host).forEach(b=>b.addEventListener('click',()=>{ const k=b.dataset.l; this.layers[k]=!this.layers[k]; b.setAttribute('aria-pressed',this.layers[k]); this.render2D(); }));
+    if(this.svg && this.o.drag!==false){
+      let down=false; const mv=e=>{ if(!down) return; const p=this.svgPt(e); if(p) this.dragTo(p); };
+      this.svg.addEventListener('pointerdown',e=>{ down=true; this.svg.setPointerCapture(e.pointerId); mv(e); });
+      this.svg.addEventListener('pointermove',mv); const up=()=>down=false; this.svg.addEventListener('pointerup',up); this.svg.addEventListener('pointercancel',up);
+    }
+    this._init={method:this.method,n:this.n,mode:this.mode,s:this.s,showSolid:this.showSolid,showElement:this.showElement};
+  }
+  svgPt(e){ const pt=this.svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY; const m=this.svg.getScreenCTM(); if(!m) return null; const q=pt.matrixTransform(m.inverse()); return [this._ix(q.x), this._iy(q.y)]; }
+  dragTo([x,y]){ const m=this.c[this.method]; if(!m) return; const c=this.c, k=c.axis.c;
+    if(this.method==='disk'){ const t = c.axis.dir==='x'? x : y; this.set({s:clamp((t-m.t[0])/(m.t[1]-m.t[0]),0,0.9999)}); }
+    else { const rho = c.axis.dir==='y'? x-k : y-k; this.set({s:clamp((rho-m.p[0])/(m.p[1]-m.p[0]),0,0.9999)}); } }
+  set(p){
+    let caseChanged=false;
+    if(p.case && p.case!==this.c){ this.c=p.case; caseChanged=true; }
+    for(const k of ['method','n','mode','s','showSolid','showElement']) if(k in p) this[k]=p[k];
+    if('overlay' in p) this.overlay=p.overlay;
+    this.syncCtrls(); this.render2D(); this.renderRead();
+    if(this.viewer && this.viewer.mounted){ if(caseChanged) this.rebuildStatic(); this.dirty=true; }
+    this.o.onChange && this.o.onChange(this);
+  }
+  syncCtrls(){
+    const pos=$(`#${this.id}-pos`); if(pos && document.activeElement!==pos) pos.value=Math.round(this.s*999);
+    $$('.segc',this.host).forEach(sg=>{ const k=sg.dataset.k; $$('button',sg).forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.v)===String(this[k]))); });
+  }
+  reset(){ this.anims=[]; this.thS=TAU; this.thE=TAU; this.layers={grid:true,region:true,slice:true,labels:true,axis:true}; $$('.chip[data-l]',this.host).forEach(b=>b.setAttribute('aria-pressed','true')); this.set(Object.assign({},this._init)); this.viewer&&this.viewer.resetView(); }
+  /* geometry of the active element */
+  elem(){
+    const m=this.c[this.method]; if(!m) return null;
+    const [a,b] = this.method==='disk'? m.t : m.p; const n=this.n, d=(b-a)/n;
+    const i=clamp(Math.floor(this.s*n),0,n-1), u0=a+i*d, u1=u0+d, um=u0+d/2;
+    if(this.method==='disk'){ const R=m.ro(um), r=m.ri(um); return {i,d,u0,u1,um,R,r,rect:[[u0,r],[u1,r],[u1,R],[u0,R]]}; }
+    const lo=m.lo(um), hi=m.hi(um); return {i,d,u0,u1,um,lo,hi,h:hi-lo,rect:[[lo,u0],[hi,u0],[hi,u1],[lo,u1]]};
+  }
+  sumFor(n){
+    const m=this.c[this.method]; if(!m) return null; let s=0;
+    if(this.method==='disk'){ const [a,b]=m.t, d=(b-a)/n; for(let i=0;i<n;i++){ const u=a+(i+.5)*d; s+=PI*(m.ro(u)**2-m.ri(u)**2)*d; } }
+    else { const [a,b]=m.p, d=(b-a)/n; for(let i=0;i<n;i++){ const u=a+(i+.5)*d; s+=TAU*u*(m.hi(u)-m.lo(u))*d; } }
+    return s;
+  }
+  vars(){ const dx=this.c.axis.dir==='x'; return {tv: dx?'x':'y', rv: dx?'y':'x'}; }
+  /* ---------- 2D ---------- */
+  render2D(){
+    if(!this.svg) return;
+    const c=this.c, W=420, H=360, L=34, R=12, T=12, B=26;
+    const [x0,x1]=c.win.x, [y0,y1]=c.win.y;
+    const sx=x=>L+(x-x0)/(x1-x0)*(W-L-R), sy=y=>T+(y1-y)/(y1-y0)*(H-T-B);
+    this._ix=px=>x0+(px-L)/(W-L-R)*(x1-x0); this._iy=py=>y1-(py-T)/(H-T-B)*(y1-y0);
+    const P=(pt)=>`${sx(pt[0]).toFixed(1)},${sy(pt[1]).toFixed(1)}`;
+    const path=(pts,close)=>'M'+pts.map(P).join('L')+(close?'Z':'');
+    const id=this.id, Ly=this.layers; let o='';
+    o+=`<defs><clipPath id="${id}-clip"><rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}"/></clipPath>`;
+    for(const [k,col] of [['R','--curve'],['r','--r-inner'],['h','--height'],['k','--ink']]) o+=`<marker id="${id}-m${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill:var(${col})"/></marker>`;
+    o+=`</defs>`;
+    const span=Math.max(x1-x0,y1-y0), st= span<=1.6?0.25: span<=3.2?0.5: span<=7?1:2;
+    if(Ly.grid){ let g=''; for(let x=Math.ceil(x0/st)*st;x<=x1+1e-9;x+=st) g+=`M${sx(x).toFixed(1)} ${T}V${H-B}`; for(let y=Math.ceil(y0/st)*st;y<=y1+1e-9;y+=st) g+=`M${L} ${sy(y).toFixed(1)}H${W-R}`; o+=`<path d="${g}" class="g-grid"/>`; }
+    // ticks
+    let tk=''; const lab=v=>fmt(Math.round(v*100)/100,2).replace('-','−');
+    for(let x=Math.ceil(x0/st)*st;x<=x1+1e-9;x+=st){ if(Math.abs(x)<1e-9) continue; tk+=`<text x="${sx(x).toFixed(1)}" y="${Math.min(H-8, Math.max(T+12, sy(0)+15)).toFixed(1)}" text-anchor="middle" class="g-tick">${lab(x)}</text>`; }
+    for(let y=Math.ceil(y0/st)*st;y<=y1+1e-9;y+=st){ if(Math.abs(y)<1e-9) continue; tk+=`<text x="${Math.max(L-4, Math.min(W-R-4, sx(0)-5)).toFixed(1)}" y="${(sy(y)+4).toFixed(1)}" text-anchor="end" class="g-tick">${lab(y)}</text>`; }
+    // axes
+    o+=`<g class="g-axis-g">`;
+    if(y0<0&&y1>0) o+=`<line x1="${L}" y1="${sy(0)}" x2="${W-R}" y2="${sy(0)}" class="g-axis" marker-end="url(#${id}-mk)"/>`;
+    if(x0<0&&x1>0) o+=`<line x1="${sx(0)}" y1="${H-B}" x2="${sx(0)}" y2="${T}" class="g-axis" marker-end="url(#${id}-mk)"/>`;
+    o+=`<text x="${W-R-2}" y="${sy(0)-7}" text-anchor="end" class="g-axl">x</text><text x="${sx(0)+8}" y="${T+12}" class="g-axl">y</text></g>`;
+    o+=tk;
+    o+=`<g clip-path="url(#${id}-clip)">`;
+    if(this.overlay && Ly.region) o+=`<path d="${path(this.overlay.poly,true)}" class="g-overlay"/>`;
+    if(Ly.region) o+=`<path d="${path(c.poly,true)}" class="g-region${c.outline?' out':''}"/>`;
+    for(const bd of c.bounds){ if(bd.x!=null) o+=`<line x1="${sx(bd.x)}" y1="${T}" x2="${sx(bd.x)}" y2="${H-B}" class="g-bound"/>`; else o+=`<line x1="${L}" y1="${sy(bd.y)}" x2="${W-R}" y2="${sy(bd.y)}" class="g-bound"/>`; }
+    for(const cv of c.curves) o+=`<path d="${path(cv.pts)}" class="g-curve"/>`;
+    // slices (all)
+    const m=c[this.method];
+    if(m && this.mode==='slices' && Ly.slice){
+      const [a,b]= this.method==='disk'? m.t : m.p, d=(b-a)/this.n; let sp='';
+      for(let i=0;i<this.n;i++){ const u0=a+i*d, um=u0+d/2; let rc;
+        if(this.method==='disk') rc=[[u0,m.ri(um)],[u0+d,m.ri(um)],[u0+d,m.ro(um)],[u0,m.ro(um)]];
+        else rc=[[m.lo(um),u0],[m.hi(um),u0],[m.hi(um),u0+d],[m.lo(um),u0+d]];
+        sp+=path(rc.map(q=>trToXY(c,q[0],q[1])),true); }
+      o+=`<path d="${sp}" class="g-slices"/>`;
+    }
+    // axis of rotation
+    if(Ly.axis){
+      const k=c.axis.c;
+      if(c.axis.dir==='x'){ o+=`<line x1="${L}" y1="${sy(k)}" x2="${W-R}" y2="${sy(k)}" class="g-rot"/>`; const ex=W-R-16; o+=`<ellipse cx="${ex}" cy="${sy(k)}" rx="5" ry="11" class="g-rotc"/>`; }
+      else { o+=`<line x1="${sx(k)}" y1="${H-B}" x2="${sx(k)}" y2="${T}" class="g-rot"/>`; o+=`<ellipse cx="${sx(k)}" cy="${T+16}" rx="11" ry="5" class="g-rotc"/>`; }
+    }
+    // element
+    const e=this.elem();
+    if(e && this.showElement && Ly.slice){ o+=`<path d="${path(e.rect.map(q=>trToXY(c,q[0],q[1])),true)}" class="g-elem"/>`; }
+    o+=`</g>`;
+    // labels
+    if(Ly.labels){
+      for(const cv of c.curves) o+=`<text x="${sx(cv.at[0])}" y="${sy(cv.at[1])}" class="g-clab">${cv.label}</text>`;
+      for(const bd of c.bounds){ if(bd.x!=null) o+=`<text x="${sx(bd.x)+4}" y="${T+14}" class="g-blab">${bd.label}</text>`; else o+=`<text x="${W-R-4}" y="${sy(bd.y)-5}" text-anchor="end" class="g-blab">${bd.label}</text>`; }
+      if(Ly.axis){ const k=c.axis.c; if(c.axis.dir==='x') o+=`<text x="${W-R-26}" y="${sy(k)+(k<0?-7:16)}" text-anchor="end" class="g-axrl">sumbu putar: ${c.axis.label}</text>`; else o+=`<text x="${sx(k)+16}" y="${T+20}" class="g-axrl">sumbu putar: ${c.axis.label}</text>`; }
+      if(e && this.showElement && Ly.slice){
+        const dx=c.axis.dir==='x', a=dx?[1,0]:[0,-1], rd=dx?[0,-1]:[1,0];
+        const Q=(t,r,ka=0,kr=0)=>{ const [x,y]=trToXY(c,t,r); return [sx(x)+a[0]*ka+rd[0]*kr, sy(y)+a[1]*ka+rd[1]*kr]; };
+        const arrow=(p,q,cls,mk)=>`<line x1="${p[0].toFixed(1)}" y1="${p[1].toFixed(1)}" x2="${q[0].toFixed(1)}" y2="${q[1].toFixed(1)}" class="g-arr ${cls}" marker-end="url(#${id}-m${mk})"/>`;
+        const txt=(p,s,cls,anc='middle')=>`<text x="${p[0].toFixed(1)}" y="${(p[1]+4).toFixed(1)}" text-anchor="${anc}" class="g-lab ${cls}">${s}</text>`;
+        const {tv,rv}=this.vars();
+        if(this.method==='disk'){
+          if(e.R>1e-6){ o+=arrow(Q(e.u1,0,9),Q(e.u1,e.R,9),'cR','R'); o+=txt(Q(e.u1,e.R*0.55,dx?20:9,dx?0:10),'R','cR'); }
+          if(e.r>1e-6){ o+=arrow(Q(e.u0,0,-9),Q(e.u0,e.r,-9),'cr','r'); o+=txt(Q(e.u0,e.r*0.5,-19),'r','cr'); }
+          o+=txt(Q(e.um,e.R,0,15),'Δ'+tv,'cs');
+        } else {
+          o+=arrow(Q(e.lo,0,-13),Q(e.lo,e.um,-13),'cR','R'); o+=txt(Q(e.lo,e.um*0.5,-24),'r','cR');
+          const b0=Q(e.lo,e.u1,0,9), b1=Q(e.hi,e.u1,0,9);
+          o+=`<path d="M${b0[0]-rd[0]*4} ${b0[1]-rd[1]*4}L${b0[0]} ${b0[1]}L${b1[0]} ${b1[1]}L${b1[0]-rd[0]*4} ${b1[1]-rd[1]*4}" class="g-arr ch"/>`;
+          o+=txt(Q((e.lo+e.hi)/2,e.u1,0,dx?20:18),'h','ch');
+          o+=txt(Q(e.hi,e.um,dx?26:-16,dx?0:2),'Δ'+rv,'cs');
+        }
+      }
+    }
+    this.svg.innerHTML=o;
+  }
+  renderRead(){
+    if(!this.readEl) return;
+    const e=this.elem(), c=this.c, {tv,rv}=this.vars(); let h='';
+    const row=(k,v)=>`<div><dt>${k}</dt><dd>${v}</dd></div>`;
+    if(!e){ const V=numV(c); h=row('Daerah',esc(c.name))+(V?row('Volume',fmt(V)):''); this.readEl.innerHTML=h; return; }
+    const k=c.axis.c, ks = k===0?'':(k<0?' + '+fmt(-k,2):' − '+fmt(k,2));
+    if(this.method==='disk'){
+      const A=PI*(e.R**2-e.r**2);
+      h+=row('Posisi irisan',`${tv} = ${fmt(e.um)}`)+row('<span class="k-R">R</span> jari-jari luar',fmt(e.R));
+      if(e.r>1e-9 || this.o.showInner) h+=row('<span class="k-r">r</span> jari-jari dalam',fmt(e.r));
+      h+=row('<span class="k-s">Δ'+tv+'</span> tebal',fmt(e.d))+row(e.r>1e-9?'Luas cincin π(R²−r²)':'Luas cakram πR²',fmt(A))+row('ΔV ≈ A·Δ'+tv,fmt(A*e.d,4));
+    } else {
+      const circ=TAU*e.um;
+      h+=row('Posisi irisan',`${rv} = ${fmt(c.axis.c+e.um)}`)+row('<span class="k-R">r</span> jari-jari kulit',`${fmt(e.um)}`)+row('<span class="k-h">h</span> tinggi',fmt(e.h))
+       +row('<span class="k-s">Δ'+rv+'</span> tebal',fmt(e.d))+row('Keliling 2πr',fmt(circ))+row('ΔV ≈ 2πr·h·Δ'+rv,fmt(circ*e.h*e.d,4));
+    }
+    if(this.mode==='slices'){ const S=this.sumFor(this.n), V=numV(c); h+=row(`Σ ΔV (n = ${this.n})`,fmt(S)); if(V){ h+=row(c.Vs?'V eksak':'V (n → ∞)', (c.Vs? c.Vs+' ≈ ':'≈ ')+fmt(V)); h+=row('Selisih',fmt(Math.abs(S-V)/V*100,2)+' %'); } }
+    this.readEl.innerHTML=h;
+  }
+  /* ---------- 3D ---------- */
+  mount(){
+    if(this.o.only2D || !this.c3) return;
+    if(!this.viewer) this.viewer=new Viewer3D(this.c3,{autoRotate:!!this.o.autoRotate, th:this.o.th, ph:this.o.ph});
+    if(!this.viewer.mount()) return;
+    this.viewer.onTheme=()=>{ this.mats(); this.rebuildStatic(); this.dirty=true; };
+    this.mats(); this.rebuildStatic(); this.dirty=true;
+    this.viewer.ticks=[(t)=>this.tick(t)];
+  }
+  unmount(){ if(this.viewer){ this.viewer.unmount(); } this.anims=[]; this.thS=TAU; this.thE=TAU; this.statG=this.solidM=this.elemM=null; }
+  mats(){
+    const col=n=>new THREE.Color(cssVar(n)||'#888');
+    this.M={ solid:new THREE.MeshStandardMaterial({color:col('--solid3d'),roughness:.62,metalness:.05,side:THREE.DoubleSide,transparent:true,opacity:.92}),
+      slices:new THREE.MeshStandardMaterial({color:col('--solid3d'),roughness:.6,metalness:.05,side:THREE.DoubleSide,transparent:true,opacity:.9}),
+      elem:new THREE.MeshStandardMaterial({color:col('--slice'),roughness:.5,side:THREE.DoubleSide,transparent:true,opacity:.96}),
+      region:new THREE.MeshBasicMaterial({color:col('--curve'),side:THREE.DoubleSide,transparent:true,opacity:.28,depthWrite:false}),
+      curve:new THREE.LineBasicMaterial({color:col('--curve')}),
+      rot:new THREE.LineDashedMaterial({color:col('--axis-rot'),dashSize:.22,gapSize:.14}) };
+  }
+  bounds(){
+    const c=this.c, tr=c.poly.map(p=>toTR(c,p)); let t0=Infinity,t1=-Infinity,rm=0;
+    for(const [t,r] of tr){ t0=Math.min(t0,t); t1=Math.max(t1,t); rm=Math.max(rm,Math.abs(r)); }
+    const k=c.axis.c; let mn,mx;
+    if(c.axis.dir==='x'){ mn=[t0,k-rm,-rm]; mx=[t1,k+rm,rm]; } else { mn=[k-rm,t0,-rm]; mx=[k+rm,t1,rm]; }
+    return {mn,mx,rm,t0,t1};
+  }
+  rebuildStatic(){
+    const V=this.viewer; if(!V||!V.mounted) return;
+    V.clear(this.statG); const g=new THREE.Group(); this.statG=g; V.scene.add(g);
+    const c=this.c, b=this.bounds();
+    const size=Math.max(b.mx[0]-b.mn[0], b.mx[1]-b.mn[1], b.mx[2]-b.mn[2]);
+    const pad=size*0.18, amn=[Math.min(b.mn[0],0)-pad, Math.min(b.mn[1],0)-pad, Math.min(b.mn[2],0)-pad], amx=[Math.max(b.mx[0],0)+pad, Math.max(b.mx[1],0)+pad, Math.max(b.mx[2],0)+pad];
+    g.add(axesGroup(amn, amx, size*0.07));
+    // region in plane z=0
+    const tris=THREE.ShapeUtils.triangulateShape(c.poly.map(p=>new THREE.Vector2(p[0],p[1])),[]);
+    const out={pos:[],idx:[]}; for(const p of c.poly) out.pos.push(p[0],p[1],0); for(const t of tris) out.idx.push(...t);
+    this.regionMesh=new THREE.Mesh(geoFrom(out),this.M.region); g.add(this.regionMesh);
+    const ol=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(c.poly.map(p=>new THREE.Vector3(p[0],p[1],0.001))), this.M.curve); g.add(ol);
+    // axis of rotation
+    const k=c.axis.c, ext=size*0.75;
+    const a0 = c.axis.dir==='x'? new THREE.Vector3(Math.min(b.t0,0)-ext*0.4,k,0) : new THREE.Vector3(k,Math.min(b.t0,0)-ext*0.4,0);
+    const a1 = c.axis.dir==='x'? new THREE.Vector3(b.t1+ext*0.4,k,0) : new THREE.Vector3(k,b.t1+ext*0.4,0);
+    const al=new THREE.Line(new THREE.BufferGeometry().setFromPoints([a0,a1]), this.M.rot); al.computeLineDistances(); g.add(al);
+    const center=[(b.mn[0]+b.mx[0])/2,(b.mn[1]+b.mx[1])/2,0];
+    if(!this._fitKey || this._fitKey!==this.c){ V.fit(center,size); this._fitKey=this.c; }
+  }
+  tick(time){
+    if(this.o.loop){ const ph=(time%7000)/7000; const th=Math.min(1,ph/0.55)*TAU; if(Math.abs(th-this.thS)>1e-4){ this.thS=th; this.showSolid=true; this.dirty=true; } }
+    const now=performance.now();
+    for(const an of this.anims){ const u=an.dur?clamp((now-an.t0)/an.dur,0,1):1; const ease=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2; this[an.key]=an.from+(an.to-an.from)*ease; this.dirty=true; if(u>=1) an.done=true; }
+    this.anims=this.anims.filter(a=>!a.done);
+    if(this.dirty){ this.dirty=false; this.rebuildDynamic(); }
+  }
+  rebuildDynamic(){
+    const V=this.viewer; if(!V||!V.mounted) return;
+    const c=this.c, map=trMap(c), m=c[this.method];
+    V.clear(this.solidM); this.solidM=null; V.clear(this.elemM); this.elemM=null;
+    const e=this.elem(), elemOn = e && this.showElement;
+    if(this.showSolid && this.thS>1e-3){
+      const out={pos:[],idx:[]};
+      if(this.mode==='slices' && m){
+        const [a,b]= this.method==='disk'? m.t : m.p, d=(b-a)/this.n, gap=d*0.07, segs=this.n>20?40:56;
+        for(let i=0;i<this.n;i++){ const u0=a+i*d, um=u0+d/2; let rc;
+          if(this.method==='disk') rc=[[u0+gap,m.ri(um)],[u0+d-gap,m.ri(um)],[u0+d-gap,m.ro(um)],[u0+gap,m.ro(um)]];
+          else rc=[[m.lo(um),u0+gap],[m.hi(um),u0+gap],[m.hi(um),u0+d-gap],[m.lo(um),u0+d-gap]];
+          revolveInto(out, rc, this.thS, segs, map); }
+        this.M.slices.opacity = elemOn? .45 : .92;
+        this.solidM=new THREE.Mesh(geoFrom(out), this.M.slices);
+      } else {
+        revolveInto(out, c.poly.map(p=>toTR(c,p)), this.thS, 96, map);
+        this.M.solid.opacity = elemOn? .26 : .92; this.M.solid.depthWrite = !elemOn;
+        this.solidM=new THREE.Mesh(geoFrom(out), this.M.solid);
+      }
+      V.scene.add(this.solidM);
+    }
+    if(elemOn && this.thE>1e-3){ const out={pos:[],idx:[]}; revolveInto(out, e.rect, this.thE, 72, map); this.elemM=new THREE.Mesh(geoFrom(out), this.M.elem); V.scene.add(this.elemM); }
+    if(this.regionMesh) this.regionMesh.visible = this.layers.region;
+  }
+  animate(key, dur=2600){ this[key]=0; this.anims=this.anims.filter(a=>a.key!==key); this.anims.push({key,from:0,to:TAU,t0:performance.now(),dur:RM?0:dur}); this.dirty=true; if(!this.viewer||!this.viewer.mounted) this[key]=TAU; }
+  sweepSolid(){ this.showSolid=true; this.animate('thS'); this.render2D(); this.o.onChange&&this.o.onChange(this); }
+  sweepElement(){ if(!this.c[this.method]) return; this.showElement=true; this.animate('thE',1800); this.render2D(); this.renderRead(); }
+}
+
+/* =========================================================
+   STEPS — aktivitas bertahap
+   ========================================================= */
+const L_ID = {check:'Periksa', hint:'Petunjuk', retry:'Ulangi', sol:'Tunjukkan jawaban', next:'Langkah berikutnya'};
+const L_EN = {check:'Check answer', hint:'Show hint', retry:'Try again', sol:'Show solution', next:'Next step'};
+class Steps{
+  constructor(host, o){ this.host=host; this.o=o; this.L=o.labels||L_ID; this.st=o.steps.map(()=>({done:false,hint:0,tries:0,sel:null})); this.render(); }
+  render(){
+    const L=this.L;
+    this.host.innerHTML=`<ol class="steps">${this.o.steps.map((s,i)=>`<li class="step" data-i="${i}">
+      <div class="shead"><span class="snum">${i+1}</span><div><div class="stitle">${s.title}</div></div></div>
+      <div class="sbody">${s.q?`<div>${s.q}</div>`:''}${this.inputHTML(s,i)}
+        <div class="btns">${s.type==='info'?`<button type="button" class="btn sm primary caps" data-b="next">${L.next}</button>`:
+          `<button type="button" class="btn sm primary caps" data-b="check">${L.check}</button><button type="button" class="btn sm caps" data-b="hint">${L.hint}</button><button type="button" class="btn sm caps" data-b="retry">${L.retry}</button><button type="button" class="btn sm caps ghost" data-b="sol">${L.sol}</button>`}</div>
+        <div class="hints"></div><div class="fb" role="status"></div><div class="sol"></div></div></li>`).join('')}</ol>`;
+    $$('.step',this.host).forEach(li=>{
+      const i=+li.dataset.i, s=this.o.steps[i];
+      li.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; if(this.st[i].done) return;
+        if(b.classList.contains('opt')){ this.st[i].sel=+b.dataset.o; $$('.opt',li).forEach(x=>{ x.setAttribute('aria-pressed', x===b); x.classList.remove('okk','bad'); }); return; }
+        const a=b.dataset.b; if(a==='check') this.check(i); else if(a==='hint') this.hint(i); else if(a==='retry') this.retry(i); else if(a==='sol') this.reveal(i); else if(a==='next') this.solve(i,'ok'); });
+      const inp=$('input.inp',li); if(inp) inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); this.check(i); } });
+    });
+    this.update(); typeset(this.host);
+  }
+  inputHTML(s,i){
+    if(s.type==='choice') return `<div class="opts">${s.options.map((op,k)=>`<button type="button" class="opt" data-o="${k}" aria-pressed="false">${op.t}</button>`).join('')}</div>`;
+    if(s.type==='expr'||s.type==='num') return `<div class="inrow">${s.pre?`<span class="pre">${s.pre}</span>`:''}<input class="inp" type="text" inputmode="text" autocomplete="off" spellcheck="false" id="${uid('in')}" placeholder="${esc(s.ph||(s.type==='num'?'contoh: 32π/5':'contoh: x^2'))}" aria-label="${esc(s.aria||'Jawaban')}"></div>`;
+    return '';
+  }
+  li(i){ return $(`.step[data-i="${i}"]`,this.host); }
+  update(){
+    let firstOpen=-1;
+    this.st.forEach((s,i)=>{ const li=this.li(i); const open = !s.done && firstOpen<0; if(open) firstOpen=i;
+      li.classList.toggle('done',s.done); li.classList.toggle('active',open); li.classList.toggle('locked', !s.done && !open);
+      const bt=$('.btns',li); if(bt) bt.hidden=s.done; const inp=$('input.inp',li); if(inp) inp.readOnly=s.done; $$('.opt',li).forEach(o=>o.tabIndex=s.done?-1:0); li.dataset.done=s.done?'1':''; });
+    if(firstOpen<0 && !this._fin){ this._fin=true; this.o.onDone && this.o.onDone(); }
+  }
+  fb(i, kind, msg){ const f=$('.fb',this.li(i)); const st={ok:'Benar.',warn:'Hampir.',err:'Belum tepat.'}[kind]; f.className='fb '+kind; f.innerHTML=`<b class="st">${st}</b>${msg||''}`; typeset(f); }
+  check(i){
+    const s=this.o.steps[i], li=this.li(i), S=this.st[i]; if(S.done) return;
+    if(s.type==='choice'){
+      if(S.sel==null){ this.fb(i,'warn','Pilih salah satu jawaban terlebih dahulu.'); return; }
+      S.tries++; const op=s.options[S.sel], b=$(`.opt[data-o="${S.sel}"]`,li);
+      if(op.ok){ b.classList.add('okk'); this.solve(i,'ok',op.fb); } else { b.classList.add('bad'); this.fb(i,'err',op.fb||'Coba periksa kembali gambar dan definisinya.'); this.update(); }
+      return;
+    }
+    const raw=$('input.inp',li).value;
+    if(!raw.trim()){ this.fb(i,'warn','Tuliskan jawaban terlebih dahulu.'); return; }
+    S.tries++;
+    if(s.type==='expr'){
+      const f=toFn(raw, s.v||'x'); if(!f){ this.fb(i,'warn','Ekspresi belum terbaca. Gunakan ^ untuk pangkat dan sqrt( ) atau √ untuk akar, misalnya 1+x^2 atau 2-sqrt(y).'); this.update(); return; }
+      const ans=toFn(s.ans, s.v||'x');
+      if(sameFn(f,ans,s.dom)){ this.solve(i,'ok',s.okMsg); return; }
+      for(const w of (s.wrong||[])){ if(sameFn(f,toFn(w.e,s.v||'x'),s.dom)){ this.fb(i,'err',w.msg); this.update(); return; } }
+      this.fb(i,'err',s.failMsg||'Ekspresi ini belum sesuai. Gunakan petunjuk bila perlu.'); this.update(); return;
+    }
+    if(s.type==='num'){
+      const v=evalNum(raw); if(v==null){ this.fb(i,'warn','Angka belum terbaca. Contoh penulisan: 32π/5, 32pi/5, atau 8π.'); this.update(); return; }
+      const hasPi=/π|pi/i.test(raw), A=s.ans.v, rel=Math.abs(v-A)/Math.abs(A);
+      if(rel<1e-6 && (hasPi || !s.ans.pi)){ this.solve(i,'ok',s.okMsg); return; }
+      if(rel<5e-3){ this.fb(i,'warn',`Nilainya sudah tepat. Tuliskan dalam bentuk eksak${s.ans.pi?' dengan π':''}, bukan desimal.`); this.update(); return; }
+      for(const w of (s.wrong||[])){ if(Math.abs(v-w.v)/Math.abs(w.v)<1e-4){ this.fb(i,'err',w.msg); this.update(); return; } }
+      this.fb(i,'err',s.failMsg||'Hasilnya belum sesuai. Periksa integran dan substitusi batasnya.'); this.update(); return;
+    }
+  }
+  solve(i, kind, msg){ const S=this.st[i], s=this.o.steps[i]; S.done=true; if(s.type!=='info') this.fb(i,kind||'ok',msg||''); if(s.sol){ const so=$('.sol',this.li(i)); so.innerHTML=s.sol; typeset(so); } s.onSolve && s.onSolve(); this.update(); }
+  hint(i){ const s=this.o.steps[i], S=this.st[i]; const H=s.hints||[]; if(!H.length){ this.fb(i,'warn','Tidak ada petunjuk tambahan untuk langkah ini.'); return; } if(S.hint<H.length){ S.hint++; addHint(); }
+    const box=$('.hints',this.li(i)); box.innerHTML=H.slice(0,S.hint).map((h,k)=>`<div><b>Petunjuk ${k+1}.</b> ${h}</div>`).join('')+(S.hint>=H.length?'':''); typeset(box); }
+  retry(i){ const li=this.li(i); this.st[i].sel=null; $$('.opt',li).forEach(x=>{ x.setAttribute('aria-pressed','false'); x.classList.remove('okk','bad'); }); const inp=$('input.inp',li); if(inp){ inp.value=''; inp.focus(); } const f=$('.fb',li); f.className='fb'; f.innerHTML=''; }
+  reveal(i){ const s=this.o.steps[i]; if(s.revealAfterAttempt && this.st[i].tries===0){ this.fb(i,'warn','Coba jawab sekali dulu, lalu jawaban dapat ditampilkan.'); return; }
+    if(s.type==='choice'){ const k=s.options.findIndex(o=>o.ok); const b=$(`.opt[data-o="${k}"]`,this.li(i)); $$('.opt',this.li(i)).forEach(x=>x.classList.remove('bad')); b.classList.add('okk'); }
+    else if(s.type!=='info'){ const inp=$('input.inp',this.li(i)); if(inp) inp.value=s.show||s.ans.text||s.ans; }
+    this.solve(i,'ok','Jawaban ditampilkan. Pelajari alasannya sebelum lanjut.'); }
+  resetAll(){ this._fin=false; this.st=this.o.steps.map(()=>({done:false,hint:0,tries:0,sel:null})); this.render(); }
+}
+const ch = (t, ok, fb) => ({t, ok:!!ok, fb});
+
+/* =========================================================
+   BUILDER — penyusun integral
+   ========================================================= */
+class Builder{
+  constructor(host, o){ this.host=host; this.o=o; this.hintN=0; this.render(); }
+  render(){
+    const o=this.o;
+    this.host.innerHTML=`<div class="builder"><div class="formula big" aria-live="polite"></div>
+      <div class="slots">${o.slots.map(s=>`<label class="slot" data-s="${s.id}">${s.label}<select id="${uid('sel')}"><option value="">— pilih —</option>${s.opts.map(v=>`<option value="${esc(v.v)}">${esc(v.t)}</option>`).join('')}</select></label>`).join('')}</div>
+      <div class="btns"><button type="button" class="btn sm primary caps" data-b="check">Periksa</button><button type="button" class="btn sm caps" data-b="hint">Petunjuk</button><button type="button" class="btn sm caps" data-b="calc">Hitung</button><button type="button" class="btn sm caps" data-b="reset">Ulangi</button></div>
+      <div class="hints"></div><div class="fb" role="status"></div><div class="sol"></div></div>`;
+    $$('select',this.host).forEach(s=>s.addEventListener('change',()=>{ s.closest('.slot').classList.remove('okk','bad'); this.ok=false; this.preview(); }));
+    $$('[data-b]',this.host).forEach(b=>b.addEventListener('click',()=>this[b.dataset.b]()));
+    this.preview();
+  }
+  vals(){ const v={}; $$('.slot',this.host).forEach(l=>v[l.dataset.s]=$('select',l).value); return v; }
+  preview(){ const f=$('.formula',this.host); f.innerHTML='\\['+this.o.tex(this.vals())+'\\]'; typeset(f); }
+  check(){
+    const v=this.vals(), msgs=[]; let ok=true;
+    for(const s of this.o.slots){ const l=$(`.slot[data-s="${s.id}"]`,this.host); l.classList.remove('okk','bad');
+      if(!v[s.id]){ ok=false; msgs.push(`<li>${s.label}: belum dipilih.</li>`); continue; }
+      if(v[s.id]===s.key) l.classList.add('okk'); else { ok=false; l.classList.add('bad'); msgs.push(`<li>${s.label}: ${s.fb(v[s.id],v)}</li>`); } }
+    const f=$('.fb',this.host);
+    if(ok){ f.className='fb ok'; f.innerHTML='<b class="st">Benar.</b>Integral volume sudah tersusun dengan tepat. Tekan HITUNG untuk menyelesaikannya.'; this.ok=true; this.o.onCorrect&&this.o.onCorrect(); }
+    else { f.className='fb err'; f.innerHTML='<b class="st">Belum tepat.</b>Perbaiki bagian yang ditandai merah:<ul class="clean">'+msgs.join('')+'</ul>'; }
+    typeset(f);
+  }
+  hint(){ const H=this.o.hints; if(this.hintN<H.length){ this.hintN++; addHint(); } const b=$('.hints',this.host); b.innerHTML=H.slice(0,this.hintN).map((h,k)=>`<div><b>Petunjuk ${k+1}.</b> ${h}</div>`).join(''); typeset(b); }
+  calc(){ if(!this.ok){ const f=$('.fb',this.host); f.className='fb warn'; f.innerHTML='<b class="st">Hampir.</b>Susun integralnya dulu, lalu tekan PERIKSA. HITUNG menampilkan penyelesaian setelah susunannya benar.'; return; } const s=$('.sol',this.host); s.innerHTML=this.o.compute; typeset(s); this.o.onCalc&&this.o.onCalc(); }
+  reset(){ this.hintN=0; this.ok=false; this.render(); }
+}
+
+/* small svg helpers for quiz/thumbnails */
+function sectionSVG(c, label){
+  const pts=c.poly, k=c.axis.c, mir=pts.map(([x,y])=> c.axis.dir==='x'? [x,2*k-y] : [2*k-x,y]);
+  const all=pts.concat(mir); let x0=Math.min(...all.map(p=>p[0]),0), x1=Math.max(...all.map(p=>p[0]),0), y0=Math.min(...all.map(p=>p[1]),0), y1=Math.max(...all.map(p=>p[1]),0);
+  const pd=0.15*Math.max(x1-x0,y1-y0); x0-=pd;x1+=pd;y0-=pd;y1+=pd; const W=200,H=150, s=Math.min(W/(x1-x0),H/(y1-y0));
+  const X=x=>(W-(x1-x0)*s)/2+(x-x0)*s, Y=y=>(H-(y1-y0)*s)/2+(y1-y)*s; const pa=p=>'M'+p.map(q=>X(q[0]).toFixed(1)+','+Y(q[1]).toFixed(1)).join('L')+'Z';
+  const ax = c.axis.dir==='x'? `<line x1="0" y1="${Y(k)}" x2="${W}" y2="${Y(k)}" class="g-rot"/>` : `<line x1="${X(k)}" y1="0" x2="${X(k)}" y2="${H}" class="g-rot"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label||'penampang benda')}"><line x1="0" y1="${Y(0)}" x2="${W}" y2="${Y(0)}" class="g-axis" style="stroke-width:1"/><line x1="${X(0)}" y1="0" x2="${X(0)}" y2="${H}" class="g-axis" style="stroke-width:1"/><path d="${pa(pts)}" class="g-solidsec"/><path d="${pa(mir)}" class="g-solidsec"/>${ax}</svg>`;
+}
+function iconSVG(kind){
+  const st='class="g-ico"';
+  if(kind==='disk') return `<svg viewBox="0 0 46 34" aria-hidden="true"><ellipse cx="23" cy="17" rx="9" ry="14" ${st}/><ellipse cx="15" cy="17" rx="9" ry="14" ${st}/></svg>`;
+  if(kind==='washer') return `<svg viewBox="0 0 46 34" aria-hidden="true"><ellipse cx="23" cy="17" rx="10" ry="15" ${st}/><ellipse cx="23" cy="17" rx="4" ry="6" class="g-ico hole"/></svg>`;
+  return `<svg viewBox="0 0 46 34" aria-hidden="true"><ellipse cx="23" cy="8" rx="16" ry="5" ${st} style="fill:none"/><path d="M7 8V26M39 8V26" ${st}/><path d="M7 26A16 5 0 0 0 39 26" ${st} style="fill:none"/></svg>`;
+}
+</script>
+
+<style>
+/* svg graphics */
+.g-grid{stroke:var(--grid);stroke-width:1;fill:none}
+.g-axis{stroke:var(--ink);stroke-width:1.4}
+.g-axl{fill:var(--ink);font-family:var(--font-display);font-style:italic;font-size:15px}
+.g-tick{fill:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.g-region{fill:var(--region-fill);stroke:none}
+.g-region.out{stroke:var(--curve);stroke-width:2}
+.g-overlay{fill:var(--overlay-fill);stroke:var(--height);stroke-width:1.5;stroke-dasharray:5 3}
+.g-curve{fill:none;stroke:var(--curve);stroke-width:2.6}
+.g-bound{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+.g-rot{stroke:var(--axis-rot);stroke-width:2;stroke-dasharray:9 5}
+.g-rotc{fill:none;stroke:var(--axis-rot);stroke-width:1.6}
+.g-slices{fill:color-mix(in srgb,var(--slice) 10%,transparent);stroke:var(--slice);stroke-width:1;stroke-opacity:.75}
+.g-elem{fill:var(--slice);fill-opacity:.6;stroke:var(--slice);stroke-width:1.6}
+.g-arr{stroke-width:2;fill:none}
+.g-arr.cR{stroke:var(--curve)}.g-arr.cr{stroke:var(--r-inner)}.g-arr.ch{stroke:var(--height)}
+.g-lab{font-weight:700;font-size:14px;font-family:var(--font-display);font-style:italic}
+.g-lab.cR{fill:var(--curve)}.g-lab.cr{fill:var(--r-inner)}.g-lab.ch{fill:var(--height)}.g-lab.cs{fill:var(--slice)}
+.g-clab{fill:var(--curve);font-size:15px;font-weight:600;font-family:var(--font-display);font-style:italic;paint-order:stroke;stroke:var(--surface);stroke-width:4px}
+.g-blab{fill:var(--muted);font-size:12.5px;font-weight:600;paint-order:stroke;stroke:var(--surface);stroke-width:4px}
+.g-axrl{fill:var(--axis-rot);font-size:12.5px;font-weight:700;paint-order:stroke;stroke:var(--surface);stroke-width:4px}
+.g-solidsec{fill:var(--region-fill);stroke:var(--curve);stroke-width:1.5}
+.g-ico{fill:color-mix(in srgb,var(--slice) 35%,var(--bg));stroke:var(--slice);stroke-width:1.6}
+.g-ico.hole{fill:var(--bg)}
+</style>
+
+<script>
+"use strict";
+/* =========================================================
+   SLIDES
+   ========================================================= */
+const PARTS = {I:'Bagian I · Konsep dasar', II:'Bagian II · Metode cakram', III:'Bagian III · Metode cincin', IV:'Bagian IV · Metode kulit tabung', V:'Bagian V · Integrasi dan evaluasi'};
+const head = (part, src, title, lead) => `<header class="sh"><div class="eyebrow">${PARTS[part]}${src?` · <span class="src">${src}</span>`:''}</div><h2>${title}</h2>${lead?`<p class="lead">${lead}</p>`:''}</header>`;
+const note = (txt) => `<details class="note"><summary>Catatan penyesuaian sumber</summary>${txt}</details>`;
+const segHTML = (k, items, cur) => `<div class="segc" data-k="${k}">${items.map(([v,t])=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}">${t}</button>`).join('')}</div>`;
+function onSeg(root, k, fn){ const sg=$(`.segc[data-k="${k}"]`,root); sg.addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $$('button',sg).forEach(x=>x.setAttribute('aria-pressed',x===b)); fn(b.dataset.v); }); }
+function labLife(...labs){ return { enter(){ labs.forEach(l=>l&&l.mount()); }, leave(){ labs.forEach(l=>l&&l.unmount()); } }; }
+
+const SLIDES = [];
+
+/* ---------- 01 COVER ---------- */
+SLIDES.push({ id:'s01', part:'I', title:'Aplikasi Integral — Volume Benda Putar', build(el){
+  el.innerHTML = `<div class="cover"><div>
+    <div class="eyebrow">Kalkulus 2 · Pertemuan 3</div>
+    <h1>Aplikasi Integral — Volume Benda Putar</h1>
+    <p class="sub">Program Studi Teknik Industri · Universitas Insan Cita Indonesia</p>
+    <dl class="meta"><dt>Kode</dt><dd>TIN613022</dd><dt>Dosen</dt><dd>Rizky Novera H, S.Si., M.T.</dd><dt></dd></dl>
+    <h3>Tujuan pembelajaran</h3>
+    <ol class="clean"><li>Menentukan volume benda yang diketahui bentuk penampangnya.</li><li>Menentukan volume benda putar dengan metode cakram/cincin.</li><li>Menentukan volume benda putar dengan metode kulit tabung.</li></ol>
+    <div class="btns" style="margin-top:16px"><button class="btn primary" data-go="1">Mulai belajar ›</button></div>
+    <div class="map" aria-label="Peta modul">
+      <button data-go="1"><b>I</b><span>Konsep dasar · slide 02–04</span></button>
+      <button data-go="4"><b>II</b><span>Metode cakram · slide 05–08</span></button>
+      <button data-go="8"><b>III</b><span>Metode cincin · slide 09–12</span></button>
+      <button data-go="12"><b>IV</b><span>Metode kulit tabung · slide 13–18</span></button>
+      <button data-go="18"><b>V</b><span>Integrasi dan evaluasi · slide 19–24</span></button>
+    </div></div>
+    <div><div class="cv-lab"></div><p style="font-size:14px;color:var(--muted);margin-top:8px">Daerah di bawah \\(y=x^2\\), \\(0\\le x\\le 2\\), menyapu satu putaran penuh mengelilingi sumbu-x dan membentuk benda putar.</p></div></div>`;
+  $$('[data-go]',el).forEach(b=>b.addEventListener('click',()=>App.go(+b.dataset.go)));
+  const lab=new Lab($('.cv-lab',el),{case:CASES.A, only3D:true, controls:false, readout:false, showSolid:true, showElement:false, loop:true, autoRotate:true, ph:1.2});
+  return labLife(lab);
+}});
+
+/* ---------- 02 ---------- */
+SLIDES.push({ id:'s02', part:'I', title:'Mengapa Integral Dapat Menghitung Volume?', build(el){
+  el.innerHTML = head('I','','Mengapa Integral Dapat Menghitung Volume?','Benda dipotong menjadi irisan tipis. Volume tiap irisan mudah dihitung; jumlahnya mendekati volume benda, dan limitnya adalah integral.')+
+  `<div class="cols"><div class="stack"><div class="ctrl"><div><span class="lbl">Jenis irisan</span>${segHTML('m',[['A','Cakram · sumbu-x'],['C','Cincin · y = −1'],['E','Kulit tabung · sumbu-y']],'A')}</div></div><div class="lab-h"></div></div>
+  <div class="stack"><div class="card"><h3>Dari irisan ke integral</h3><div class="flow"><span class="n">daerah 2D</span><span class="a">→</span><span class="n hi">irisan tipis</span><span class="a">→</span><span class="n hi">ΔV</span><span class="a">→</span><span class="n">Σ ΔV</span><span class="a">→</span><span class="n">limit n → ∞</span><span class="a">→</span><span class="n">∫</span></div>
+  <div class="formula" style="margin-top:12px">\\[V=\\lim_{n\\to\\infty}\\sum_{i=1}^{n}\\Delta V_i=\\int_a^b A(x)\\,dx\\]</div></div>
+  <div class="card"><h3>Jumlah ΔV mendekati volume eksak</h3><div class="tw"><table class="t" id="s02t"></table></div><p style="font-size:14px;color:var(--muted);margin:8px 0 0">Setiap ΔV dihitung pada titik tengah irisan. Pilih n pada kontrol untuk melihat benda tersusun dari n irisan.</p></div>
+  <div class="card plain"><div class="q-h"></div></div></div></div>`;
+  const tbl=$('#s02t',el);
+  const lab=new Lab($('.lab-h',el),{case:CASES.A, method:'disk', mode:'slices', n:10, showSolid:true, showElement:true, onChange:l=>fill(l)});
+  function fill(l){ const V=numV(l.c); tbl.innerHTML=`<thead><tr><th>n</th><th>Σ ΔV</th><th>Selisih dari ${l.c.Vs}</th></tr></thead><tbody>${[4,10,20,50,100].map(n=>{ const S=l.sumFor(n); return `<tr class="${n===l.n?'hi':''}"><td>${n}</td><td>${fmt(S,4)}</td><td>${fmt(Math.abs(S-V)/V*100,3)} %</td></tr>`; }).join('')}</tbody>`; }
+  fill(lab);
+  onSeg(el,'m',v=>lab.set({case:CASES[v], method: v==='E'?'shell':'disk'}));
+  new Steps($('.q-h',el),{steps:[{title:'Cek pemahaman', type:'choice', q:'Bila jumlah irisan n digandakan, selisih antara Σ ΔV dan volume eksak akan …',
+    options:[ch('membesar',0,'Coba bandingkan baris n = 10 dan n = 20 pada tabel. Irisan lebih tipis mengikuti kurva lebih dekat.'),ch('mengecil',1,'Irisan makin tipis, sehingga tangga cakram makin mendekati bentuk kurva. Di limit n → ∞ selisihnya nol.'),ch('tetap sama',0,'Tabel menunjukkan selisih berubah ketika n berubah.')],
+    hints:['Lihat kolom selisih pada tabel untuk n yang berbeda.']}], onDone:()=>markDone('s02')});
+  return labLife(lab);
+}});
+
+/* ---------- 03 PENAMPANG TERTENTU ---------- */
+class XSection{
+  constructor(host,o){ this.host=host; this.o=o; this.shape='sq'; this.n=20; this.x=1.5; this.v=new Viewer3D(host,{th:1.0,ph:1.05}); }
+  mount(){ if(!this.v.mount()) return; this.v.fit([1,1.1,0.6],4.6); this.v.onTheme=()=>{this.build();}; this.build(); }
+  unmount(){ this.v.unmount(); }
+  set(p){ Object.assign(this,p); if(this.v.mounted) this.build(); }
+  build(){
+    const V=this.v; V.clear(this.g); const g=new THREE.Group(); this.g=g; V.scene.add(g);
+    g.add(axesGroup([-0.4,-0.4,-0.4],[2.6,4.6,4.4],0.3));
+    const col=n=>new THREE.Color(cssVar(n));
+    const base=[]; const P=under(fq,0,2); const tris=THREE.ShapeUtils.triangulateShape(P.map(p=>new THREE.Vector2(p[0],p[1])),[]);
+    const out={pos:[],idx:[]}; for(const p of P) out.pos.push(p[0],p[1],0); for(const t of tris) out.idx.push(...t);
+    g.add(new THREE.Mesh(geoFrom(out),new THREE.MeshBasicMaterial({color:col('--curve'),transparent:true,opacity:.3,side:THREE.DoubleSide,depthWrite:false})));
+    const mS=new THREE.MeshStandardMaterial({color:col('--solid3d'),roughness:.6,transparent:true,opacity:.75}), mE=new THREE.MeshStandardMaterial({color:col('--slice'),roughness:.5});
+    const d=2/this.n, cur=clamp(Math.floor(this.x/d),0,this.n-1);
+    for(let i=0;i<this.n;i++){ const xm=(i+.5)*d, s=xm*xm, w=d*0.9; let mesh;
+      if(this.shape==='sq'){ mesh=new THREE.Mesh(new THREE.BoxGeometry(w,s,s), i===cur?mE:mS); mesh.position.set(xm,s/2,s/2); }
+      else { const cg=new THREE.CylinderGeometry(s,s,w,48); cg.rotateZ(PI/2); mesh=new THREE.Mesh(cg,i===cur?mE:mS); mesh.position.set(xm,0,0); }
+      g.add(mesh); }
+  }
+}
+SLIDES.push({ id:'s03', part:'I', title:'Volume Benda dengan Penampang Tertentu', build(el){
+  el.innerHTML = head('I','','Volume Benda dengan Penampang Tertentu','Bila luas penampang di setiap posisi x diketahui, volume benda adalah jumlah “luas × tebal” dari semua irisan.')+
+  `<div class="cols"><div class="stack"><figure class="view"><figcaption>Benda di atas alas y = x², 0 ≤ x ≤ 2 <i>seret untuk memutar</i></figcaption><div class="c3d" id="s03v"></div></figure>
+   <div class="ctrl"><div><span class="lbl">Bentuk penampang</span>${segHTML('shape',[['sq','Persegi bersisi f(x)'],['ci','Lingkaran berjari-jari f(x)']],'sq')}</div>
+   <div><span class="lbl">Jumlah irisan n</span>${segHTML('n',[['10','10'],['20','20'],['50','50']],'20')}</div>
+   <label class="rng"><span class="lbl">Posisi x</span><input type="range" id="s03x" min="0" max="999" value="749" aria-label="Posisi penampang"></label></div>
+   <dl class="read" id="s03r" aria-live="polite"></dl></div>
+  <div class="stack"><div class="card"><span class="tag">Penjelasan pendukung</span><p style="margin-top:8px">Modul sumber memuat judul dan tujuan ini tanpa rumusnya. Gagasan umumnya:</p>
+   <div class="formula">\\[\\Delta V\\approx A(x)\\,\\Delta x\\qquad V=\\int_a^b A(x)\\,dx\\]</div>
+   <p style="margin-top:10px">\\(A(x)\\) luas penampang di posisi \\(x\\), \\(\\Delta x\\) tebal irisan. Bila penampangnya lingkaran berjari-jari \\(f(x)\\), maka \\(A(x)=\\pi[f(x)]^2\\) dan kita mendapat rumus metode cakram.</p></div>
+   <div class="card plain"><span class="tag add">Latihan tambahan</span><div id="s03q" style="margin-top:8px"></div></div></div></div>`;
+  const xs=new XSection($('#s03v',el)); const rd=$('#s03r',el);
+  const upd=()=>{ const d=2/xs.n, i=clamp(Math.floor(xs.x/d),0,xs.n-1), xm=(i+.5)*d, f=xm*xm, A= xs.shape==='sq'? f*f : PI*f*f; let S=0; for(let k=0;k<xs.n;k++){ const u=(k+.5)*d; S+=(xs.shape==='sq'?u**4:PI*u**4)*d; }
+    rd.innerHTML=`<div><dt>Posisi x</dt><dd>${fmt(xm)}</dd></div><div><dt>f(x) = x²</dt><dd>${fmt(f)}</dd></div><div><dt>A(x) = ${xs.shape==='sq'?'[f(x)]²':'π[f(x)]²'}</dt><dd>${fmt(A)}</dd></div><div><dt>Δx</dt><dd>${fmt(d)}</dd></div><div><dt>ΔV ≈ A·Δx</dt><dd>${fmt(A*d,4)}</dd></div><div><dt>Σ ΔV (n = ${xs.n})</dt><dd>${fmt(S)}</dd></div>`; };
+  onSeg(el,'shape',v=>{ xs.set({shape:v}); upd(); }); onSeg(el,'n',v=>{ xs.set({n:+v}); upd(); });
+  $('#s03x',el).addEventListener('input',e=>{ xs.set({x:e.target.value/999*2}); upd(); }); upd();
+  new Steps($('#s03q',el),{steps:[{title:'Hitung volume benda berpenampang persegi', type:'num', q:'Alas benda adalah daerah di bawah \\(y=x^2\\), \\(0\\le x\\le 2\\). Setiap penampang tegak lurus sumbu-x berupa persegi bersisi \\(x^2\\). Berapa volumenya?',
+    ans:{v:32/5,pi:false,tex:'32/5'}, show:'32/5', ph:'contoh: 32/5', wrong:[{v:32*PI/5,msg:'Itu volume untuk penampang lingkaran. Untuk persegi, \\(A(x)=(x^2)^2=x^4\\) tanpa π.'},{v:8/3,msg:'Sisi persegi harus dikuadratkan: \\(A(x)=(x^2)^2\\).'}],
+    hints:['Luas persegi bersisi s adalah s².','\\(V=\\int_0^2 (x^2)^2\\,dx=\\int_0^2 x^4\\,dx\\).'],
+    sol:'\\(V=\\int_0^2 x^4\\,dx=\\tfrac{1}{5}x^5\\big|_0^2=\\tfrac{32}{5}\\). Bandingkan dengan \\(\\tfrac{32\\pi}{5}\\) di slide 06: penampang lingkaran menambah faktor π.'}], onDone:()=>markDone('s03')});
+  return {enter(){ xs.mount(); }, leave(){ xs.unmount(); }};
+}});
+
+/* ---------- 04 MENGENAL BENDA PUTAR ---------- */
+SLIDES.push({ id:'s04', part:'I', title:'Mengenal Benda Putar', build(el){
+  el.innerHTML = head('I','','Mengenal Benda Putar','Bola, tabung, dan kerucut diperoleh dengan memutar setengah lingkaran, persegi panjang, dan segitiga terhadap sumbu yang berimpit dengan salah satu sisinya.')+
+  `<div class="cols"><div class="stack"><div class="ctrl"><div><span class="lbl">Daerah</span>${segHTML('shape',[['semi','Setengah lingkaran'],['rect','Persegi panjang'],['tri','Segitiga']],'semi')}</div>
+   <div><span class="lbl">Sumbu putar</span>${segHTML('ax',[['v','Sisi tegak'],['h','Sisi alas']],'v')}</div></div><div class="lab-h"></div></div>
+   <div class="stack"><div class="card"><h3>Amati</h3><p>Tekan <b>PUTAR DAERAH</b>. Sisi yang berimpit dengan sumbu tidak bergerak; titik lain membentuk lingkaran di sekitar sumbu. Ganti sumbu untuk melihat benda yang berbeda dari daerah yang sama.</p>
+   <p style="margin:0">Modul sumber menyebut tiga metode menghitung volumenya: <b>cakram</b> (benda tanpa lubang), <b>cincin</b> (benda berlubang di tengah), dan <b>kulit tabung</b> (lapisan silinder konsentris).</p></div>
+   <div class="card plain"><h3>Cocokkan daerah dengan benda putarnya</h3><p style="font-size:15px;color:var(--muted)">Sumbu putar berimpit dengan sisi tegak daerah.</p><div id="s04m"></div></div></div></div>`;
+  let kind='semi', ax='v';
+  const lab=new Lab($('.lab-h',el),{case:shapeCase(kind,ax), controls:{pos:false,n:false,mode:false,rotateSlice:false,layers:true,reset:true}, showSolid:false, showElement:false, readout:false, drag:false});
+  const upd=()=>{ lab.set({case:shapeCase(kind,ax), showSolid:false}); lab.sweepSolid(); };
+  onSeg(el,'shape',v=>{ kind=v; upd(); }); onSeg(el,'ax',v=>{ ax=v; upd(); });
+  const opts=[['bola','Bola'],['tabung','Tabung'],['kerucut','Kerucut']];
+  const sel=(id,lbl)=>`<label class="slot" data-s="${id}">${lbl}<select id="s04-${id}"><option value="">— pilih —</option>${opts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select></label>`;
+  const m=$('#s04m',el); m.innerHTML=`<div class="slots">${sel('semi','Setengah lingkaran')}${sel('rect','Persegi panjang')}${sel('tri','Segitiga siku-siku')}</div><div class="btns" style="margin-top:10px"><button class="btn sm primary caps" data-b="c">Periksa</button></div><div class="fb" style="margin-top:8px"></div>`;
+  const key={semi:'bola',rect:'tabung',tri:'kerucut'};
+  $('[data-b="c"]',m).addEventListener('click',()=>{ let ok=true; for(const k in key){ const l=$(`.slot[data-s="${k}"]`,m), v=$('select',l).value; l.classList.remove('okk','bad'); if(v===key[k]) l.classList.add('okk'); else { ok=false; l.classList.add('bad'); } }
+    const f=$('.fb',m); if(ok){ f.className='fb ok'; f.innerHTML='<b class="st">Benar.</b>Setengah lingkaran → bola, persegi panjang → tabung, segitiga → kerucut.'; markDone('s04'); } else { f.className='fb err'; f.innerHTML='<b class="st">Belum tepat.</b>Pilih daerah itu di kiri, sumbu “Sisi tegak”, lalu tekan PUTAR DAERAH. Perhatikan sisi mana yang tidak bergerak.'; } });
+  return {enter(){ lab.mount(); lab.sweepSolid(); }, leave(){ lab.unmount(); }};
+}});
+
+/* ---------- 05 METODE CAKRAM ---------- */
+SLIDES.push({ id:'s05', part:'II', title:'Metode Cakram', build(el){
+  el.innerHTML = head('II','','Metode Cakram','Dipakai ketika benda putar tidak memiliki lubang. Irisan persegi panjang yang tegak lurus sumbu putar berubah menjadi cakram.')+
+  `<div class="cols"><div class="stack"><div class="ctrl"><div><span class="lbl">Sumbu putar</span>${segHTML('ax',[['x','Sumbu-x'],['y','Sumbu-y']],'x')}</div></div><div class="lab-h"></div></div>
+  <div class="stack"><div class="card" id="s05f"></div>
+  <div class="card plain"><h3>Bagian-bagian yang diamati</h3><ul class="clean"><li><span class="k-s">Irisan</span>: persegi panjang setebal Δx (atau Δy), tegak lurus sumbu putar.</li><li><span class="k-R">Jari-jari cakram</span>: jarak sumbu putar ke kurva, yaitu tinggi irisan.</li><li><span class="k-ax">Sumbu putar</span>: garis putus-putus merah.</li></ul><p style="margin-top:10px;font-size:15px">Tekan <b>PUTAR IRISAN</b> untuk melihat satu irisan menjadi cakram, lalu <b>PUTAR DAERAH</b> untuk seluruh benda.</p></div>
+  ${note('Modul sumber menulis “tinggi f(y) … diputar sekitar sumbu x … jari-jari f(y)”, sedangkan gambar dan rumusnya memakai g(y) dan sumbu-y. Modul ini memakai g(y) dan sumbu-y agar sesuai dengan rumusnya.')}</div></div>`;
+  const F=$('#s05f',el);
+  const fx=()=>{ F.innerHTML=`<h3>Putaran terhadap sumbu-x</h3><p style="font-size:15px">\\(D=\\{(x,y)\\mid a\\le x\\le b,\\ 0\\le y\\le f(x)\\}\\). Irisan setinggi \\(f(x)\\), setebal \\(\\Delta x\\) menjadi cakram berjari-jari \\(f(x)\\).</p><div class="formula">\\[\\Delta V\\approx\\pi f^2(x)\\,\\Delta x\\qquad V=\\pi\\int_a^b f^2(x)\\,dx\\]</div>`; typeset(F); };
+  const fy=()=>{ F.innerHTML=`<h3>Putaran terhadap sumbu-y</h3><p style="font-size:15px">\\(D=\\{(x,y)\\mid c\\le y\\le d,\\ 0\\le x\\le g(y)\\}\\). Irisan horizontal sepanjang \\(g(y)\\), setebal \\(\\Delta y\\) menjadi cakram berjari-jari \\(g(y)\\).</p><div class="formula">\\[\\Delta V\\approx\\pi g^2(y)\\,\\Delta y\\qquad V=\\pi\\int_c^d g^2(y)\\,dy\\]</div>`; typeset(F); };
+  fx();
+  const lab=new Lab($('.lab-h',el),{case:CASES.G1, method:'disk', showSolid:false, n:10, controls:{n:true,mode:true}});
+  onSeg(el,'ax',v=>{ lab.set({case: v==='x'?CASES.G1:CASES.G1y, showSolid:false}); v==='x'?fx():fy(); });
+  return {enter(){ lab.mount(); markDone('s05'); }, leave(){ lab.unmount(); }};
+}});
+
+/* ---------- 06 CAKRAM SUMBU-X ---------- */
+SLIDES.push({ id:'s06', part:'II', title:'Cakram di Sekitar Sumbu-x', build(el){
+  el.innerHTML = head('II','','Cakram di Sekitar Sumbu-x','Contoh soal: daerah yang dibatasi kurva \\(y=x^2\\), sumbu-x, dan garis \\(x=2\\) diputar mengelilingi sumbu-x. Tentukan volume benda putar yang terbentuk.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="st-h"></div></div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.A, method:'disk', showSolid:false, showElement:false, n:10});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Identifikasi daerah', type:'choice', q:'Daerah mana yang dimaksud soal?', options:[
+      ch('Di bawah \\(y=x^2\\), di atas sumbu-x, untuk \\(0\\le x\\le 2\\)',1,'Daerah dibatasi kurva, sumbu-x, dan garis x = 2, seperti arsiran biru.'),
+      ch('Di kiri \\(y=x^2\\) sampai sumbu-y, untuk \\(0\\le y\\le 4\\)',0,'Itu daerah contoh slide 08, yang dibatasi sumbu-y dan y = 4.'),
+      ch('Di atas \\(y=x^2\\) sampai garis \\(y=4\\)',0,'Soal menyebut sumbu-x dan x = 2 sebagai batas, bukan y = 4.')], hints:['Baca kembali tiga batas pada soal: kurva, sumbu-x, dan x = 2.']},
+    {title:'Sumbu putar', type:'choice', q:'Terhadap garis apa daerah diputar?', options:[ch('Sumbu-x',1,''),ch('Sumbu-y',0,'Soal menyebut “diputar mengelilingi sumbu-x”.'),ch('Garis \\(y=-1\\)',0,'Garis y = −1 dipakai pada contoh metode cincin, bukan soal ini.')]},
+    {title:'Arah irisan', type:'choice', q:'Agar setiap irisan menjadi cakram, irisan dibuat …', options:[
+      ch('tegak lurus sumbu putar: irisan vertikal setebal \\(\\Delta x\\)',1,'Irisan vertikal yang diputar terhadap sumbu-x menghasilkan cakram.'),
+      ch('sejajar sumbu putar: irisan horizontal setebal \\(\\Delta y\\)',0,'Irisan yang sejajar sumbu putar menghasilkan kulit tabung, bukan cakram.')], onSolve:()=>lab.set({showElement:true})},
+    {title:'Bentuk penampang', type:'choice', q:'Tekan PUTAR IRISAN di kiri. Bentuk apa yang terjadi?', options:[
+      ch('Cakram penuh',1,'Tidak ada celah antara sumbu-x dan daerah, sehingga tidak ada lubang.'),ch('Cincin berlubang',0,'Lubang muncul bila ada celah antara sumbu putar dan daerah. Di sini daerah menempel pada sumbu-x.'),ch('Kulit tabung',0,'Kulit tabung berasal dari irisan yang sejajar sumbu putar.')], onSolve:()=>lab.sweepElement()},
+    {title:'Jari-jari cakram', type:'expr', v:'x', pre:'R(x) =', ans:'x^2', show:'x^2', dom:[0.2,1.9], q:'Tuliskan jari-jari cakram pada posisi \\(x\\).',
+      wrong:[{e:'x',msg:'R adalah jarak dari sumbu-x ke kurva, yaitu tinggi irisan = x², bukan x.'},{e:'2',msg:'2 adalah batas daerah. Jari-jari berubah mengikuti posisi x.'},{e:'x^4',msg:'x⁴ adalah R². Tuliskan jari-jarinya saja.'}],
+      hints:['Jari-jari = jarak dari sumbu putar (y = 0) ke kurva.','Pada posisi x, kurva berada di y = x².'], sol:'\\(R(x)=x^2\\).'},
+    {title:'Batas integrasi', type:'choice', q:'Irisan bergerak sepanjang sumbu-x dari … sampai …', options:[ch('\\(0\\le x\\le 2\\)',1,''),ch('\\(0\\le x\\le 4\\)',0,'4 adalah nilai y di x = 2. Integral terhadap x, jadi batasnya nilai x: 0 sampai 2.'),ch('\\(0\\le y\\le 4\\)',0,'Irisan setebal Δx, sehingga batasnya dinyatakan dalam x.')]},
+    {title:'Volume elemen', type:'choice', q:'Volume satu cakram adalah …', options:[ch('\\(\\Delta V\\approx\\pi(x^2)^2\\Delta x=\\pi x^4\\Delta x\\)',1,''),ch('\\(\\Delta V\\approx\\pi x^2\\Delta x\\)',0,'Luas cakram memakai R². Dengan R = x², maka R² = x⁴.'),ch('\\(\\Delta V\\approx 2\\pi x\\cdot x^2\\Delta x\\)',0,'Itu bentuk kulit tabung terhadap sumbu-y.')], sol:'\\(\\Delta V\\approx\\pi(x^2)^2\\Delta x=\\pi x^4\\Delta x\\).'},
+    {title:'Hitung volume', type:'num', q:'\\(V=\\pi\\int_0^2 x^4\\,dx=\\ ?\\)', ans:{v:32*PI/5,pi:true,tex:'32\\pi/5'}, show:'32π/5',
+      wrong:[{v:32/5,msg:'Faktor π hilang. Luas cakram adalah πR².'},{v:8*PI/3,msg:'Ini π∫x² dx: jari-jari belum dikuadratkan.'},{v:64*PI/5,msg:'Periksa antiturunan: ∫x⁴ dx = x⁵/5.'}],
+      hints:['Antiturunan x⁴ adalah x⁵/5.','Substitusi: (π/5)(2⁵ − 0⁵).'], sol:'\\(V=\\pi\\int_0^2 x^4\\,dx=\\frac{\\pi}{5}x^5\\Big|_0^2=\\frac{32}{5}\\pi\\).', onSolve:()=>lab.sweepSolid()}
+  ], onDone:()=>markDone('s06')});
+  return labLife(lab);
+}});
+
+/* ---------- 07 BUILDER CAKRAM ---------- */
+SLIDES.push({ id:'s07', part:'II', title:'Membangun Integral Metode Cakram', build(el){
+  el.innerHTML = head('II','','Membangun Integral Metode Cakram','Susun integral volume dengan memilih variabel, batas, dan jari-jari. Sistem memeriksa setiap bagian.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="tabs" role="tablist"><button role="tab" aria-selected="true" data-t="1">Tugas 1 · sumbu-x</button><button role="tab" aria-selected="false" data-t="2">Tugas 2 · sumbu-y</button></div><div class="card" id="s07d"></div><div id="s07b"></div></div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.A, method:'disk', only2D:true, showElement:true, controls:{pos:true,n:false,mode:false,rotate:false,rotateSlice:false,reset:false}});
+  const R=[{v:'x',t:'x'},{v:'x2',t:'x²'},{v:'sx',t:'√x'},{v:'y',t:'y'},{v:'sy',t:'√y'},{v:'2',t:'2'}];
+  const texR={x:'x',x2:'x^2',sx:'\\sqrt{x}',y:'y',sy:'\\sqrt{y}','2':'2'};
+  const T=[
+    {cas:CASES.A, desc:'Daerah dibatasi \\(y=x^2\\), sumbu-x, dan \\(x=2\\); diputar terhadap <span class="k-ax">sumbu-x</span>.', key:{v:'dx',a:'0',b:'2',R:'x2'},
+     hints:['Irisan tegak lurus sumbu-x setebal Δx, jadi integral terhadap x.','x berjalan dari 0 sampai 2.','Jari-jari = tinggi irisan = x².'],
+     compute:'\\[V=\\pi\\int_0^2 (x^2)^2\\,dx=\\pi\\int_0^2 x^4\\,dx=\\frac{\\pi}{5}x^5\\Big|_0^2=\\frac{32\\pi}{5}\\approx 20{,}106\\]'},
+    {cas:CASES.B, desc:'Daerah dibatasi \\(y=x^2\\), sumbu-y, dan \\(y=4\\); diputar terhadap <span class="k-ax">sumbu-y</span>.', key:{v:'dy',a:'0',b:'4',R:'sy'},
+     hints:['Irisan tegak lurus sumbu-y adalah irisan horizontal setebal Δy.','y berjalan dari 0 sampai 4.','Dari y = x² diperoleh x = √y, panjang irisan horizontal.'],
+     compute:'\\[V=\\pi\\int_0^4 (\\sqrt{y})^2\\,dy=\\pi\\int_0^4 y\\,dy=\\frac{\\pi}{2}y^2\\Big|_0^4=8\\pi\\approx 25{,}133\\]'}];
+  let cur=0; const doneT=new Set();
+  const show=(k)=>{ cur=k; const t=T[k]; lab.set({case:t.cas}); const d=$('#s07d',el); d.innerHTML=`<b>Kasus.</b> ${t.desc}`; typeset(d);
+    const vv=t.key.v;
+    new Builder($('#s07b',el),{ tex:v=>`V=\\pi\\int_{${v.a||'\\square'}}^{${v.b||'\\square'}}\\left[${v.R?texR[v.R]:'\\square'}\\right]^2\\,${v.v?(v.v==='dx'?'dx':'dy'):'d\\square'}`,
+      slots:[
+        {id:'v',label:'Variabel integrasi',opts:[{v:'dx',t:'dx'},{v:'dy',t:'dy'}],key:vv,fb:()=> vv==='dx'?'Irisan tegak lurus sumbu-x punya tebal Δx, jadi integral terhadap x.':'Irisan tegak lurus sumbu-y adalah irisan horizontal setebal Δy, jadi integral terhadap y.'},
+        {id:'a',label:'Batas bawah',opts:['0','1','2','4'].map(x=>({v:x,t:x})),key:t.key.a,fb:()=>'Daerah dimulai dari '+(vv==='dx'?'x = 0':'y = 0')+'.'},
+        {id:'b',label:'Batas atas',opts:['0','2','4'].map(x=>({v:x,t:x})),key:t.key.b,fb:(val)=> vv==='dx' ? (val==='4'?'4 adalah nilai y di x = 2. Batas mengikuti variabel x: sampai x = 2.':'Daerah berakhir di garis x = 2.') : (val==='2'?'2 adalah nilai x. Untuk integral terhadap y, batas atasnya y = 4.':'Daerah berakhir di garis y = 4.')},
+        {id:'R',label:'Jari-jari R',opts:R,key:t.key.R,fb:(val)=>{ const inX=['x','x2','sx'].includes(val), inY=['y','sy'].includes(val);
+           if(vv==='dx'&&inY) return 'Jari-jari harus ditulis dalam variabel x.'; if(vv==='dy'&&inX) return 'Jari-jari harus ditulis dalam variabel y; ubah y = x² menjadi x = √y.';
+           if(val==='2') return 'Jari-jari berubah mengikuti posisi irisan; 2 adalah batas daerah.'; return vv==='dx'?'Jari-jari = jarak sumbu-x ke kurva = x².':'Jari-jari = jarak sumbu-y ke kurva x = √y.'; }}],
+      hints:t.hints, compute:t.compute,
+      onCalc:()=>{ doneT.add(k); if(doneT.size===2) markDone('s07'); } });
+    $$('[role="tab"]',el).forEach(b=>b.setAttribute('aria-selected', b.dataset.t==String(k+1)));
+  };
+  $$('[role="tab"]',el).forEach(b=>b.addEventListener('click',()=>show(+b.dataset.t-1)));
+  show(0);
+  return labLife(lab);
+}});
+
+/* ---------- 08 CAKRAM SUMBU-Y ---------- */
+SLIDES.push({ id:'s08', part:'II', title:'Cakram di Sekitar Sumbu-y', build(el){
+  el.innerHTML = head('II','','Cakram di Sekitar Sumbu-y','Contoh soal: daerah yang dibatasi kurva \\(y=x^2\\), sumbu-y, dan garis \\(y=4\\) diputar mengelilingi sumbu-y.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="card"><h3>Ubah kurva menjadi fungsi y</h3><div class="formula">\\[y=x^2\\iff x=\\sqrt{y}\\quad(x\\ge 0)\\]</div><p style="margin:8px 0 0;font-size:15px">Irisan horizontal pada ketinggian y panjangnya \\(\\sqrt{y}\\). Panjang itulah <span class="k-R">jari-jari</span> cakram.</p></div><div class="st-h"></div>
+  ${note('Baris “volume of a solid of revolution” pada modul sumber ditulis “Volume benda putar”, dan ΔV memakai tanda ≈ seperti pada rumus umumnya.')}</div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.B, method:'disk', showSolid:false, n:10, s:0.6});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Jari-jari sebagai fungsi y', type:'expr', v:'y', pre:'R(y) =', ans:'sqrt(y)', show:'√y', dom:[0.3,3.8], ph:'contoh: sqrt(y)',
+      wrong:[{e:'y^2',msg:'Itu memangkatkan, bukan membalik. Dari y = x² diperoleh x = √y.'},{e:'y',msg:'Panjang irisan horizontal adalah nilai x di kurva, yaitu √y.'},{e:'2',msg:'2 adalah nilai x terbesar. Jari-jari berubah terhadap y.'}],
+      hints:['Jari-jari = jarak sumbu-y ke kurva pada ketinggian y.','Selesaikan y = x² untuk x.'], sol:'\\(R(y)=\\sqrt{y}\\).'},
+    {title:'Batas integrasi', type:'choice', q:'Irisan horizontal bergerak dari … sampai …', options:[ch('\\(0\\le y\\le 4\\)',1,''),ch('\\(0\\le x\\le 2\\)',0,'Irisan setebal Δy, jadi batasnya nilai y.'),ch('\\(0\\le y\\le 2\\)',0,'2 adalah nilai x di ujung kurva. Garis atas daerah adalah y = 4.')]},
+    {title:'Volume elemen', type:'choice', q:'Volume satu cakram adalah …', options:[ch('\\(\\Delta V\\approx\\pi(\\sqrt{y})^2\\Delta y=\\pi y\\,\\Delta y\\)',1,''),ch('\\(\\Delta V\\approx\\pi y^2\\Delta y\\)',0,'Jari-jarinya √y; dikuadratkan menjadi y, bukan y².'),ch('\\(\\Delta V\\approx\\pi\\sqrt{y}\\,\\Delta y\\)',0,'Luas cakram memakai R² = (√y)² = y.')], onSolve:()=>lab.sweepElement()},
+    {title:'Hitung volume', type:'num', q:'\\(V=\\pi\\int_0^4 y\\,dy=\\ ?\\)', ans:{v:8*PI,pi:true,tex:'8\\pi'}, show:'8π',
+      wrong:[{v:8,msg:'Faktor π hilang.'},{v:64*PI/3,msg:'Ini π∫y² dy. Jari-jari √y dikuadratkan menjadi y, bukan y².'},{v:16*PI/3,msg:'Ini π∫√y dy. Luas cakram memakai R² = y.'},{v:16*PI,msg:'Antiturunan y adalah y²/2.'}],
+      hints:['Antiturunan y adalah y²/2.'], sol:'\\(V=\\pi\\int_0^4 y\\,dy=\\frac{\\pi}{2}y^2\\Big|_0^4=8\\pi\\).', onSolve:()=>lab.sweepSolid()}
+  ], onDone:()=>markDone('s08')});
+  return labLife(lab);
+}});
+
+/* ---------- 09 METODE CINCIN ---------- */
+SLIDES.push({ id:'s09', part:'III', title:'Metode Cincin', build(el){
+  el.innerHTML = head('III','','Metode Cincin','Dipakai ketika benda putar memiliki lubang di tengah. Irisan berada di antara dua kurva, sehingga hasil putarannya berupa cincin.')+
+  `<div class="cols"><div class="stack"><div class="ctrl"><div><span class="lbl">Sumbu putar</span>${segHTML('ax',[['x','Sumbu-x'],['y','Sumbu-y']],'x')}</div></div><div class="lab-h"></div></div>
+  <div class="stack"><div class="card ring"><h3>Penampang irisan saat ini</h3><div id="s09r"></div><div class="btns" style="justify-content:center;margin-top:6px"><button class="btn sm" id="s09fill" aria-pressed="false">Isi lubang</button></div><p id="s09t" style="font-size:15px;margin:8px 0 0;font-variant-numeric:tabular-nums"></p></div>
+  <div class="card" id="s09f"></div>${note('Modul sumber mendefinisikan daerah dengan c ≤ y ≤ d tetapi menulis batas integral a dan b. Modul menulis batasnya c dan d.')}</div></div>`;
+  let filled=false;
+  const ring=(l)=>{ const e=l.elem(); if(!e) return; const s=95/Math.max(e.R,0.01), Rp=e.R*s, rp=e.r*s;
+    $('#s09r',el).innerHTML=`<svg viewBox="0 0 220 220" role="img" aria-label="Penampang cincin"><circle cx="110" cy="110" r="${Rp}" style="fill:color-mix(in srgb,var(--slice) 55%,transparent);stroke:var(--slice);stroke-width:2"/><circle cx="110" cy="110" r="${rp}" style="fill:${filled?'color-mix(in srgb,var(--slice) 25%,var(--bg))':'var(--surface)'};stroke:var(--r-inner);stroke-width:2;${filled?'stroke-dasharray:5 3':''}"/><line x1="110" y1="110" x2="${110+Rp*Math.cos(-0.6)}" y2="${110+Rp*Math.sin(-0.6)}" style="stroke:var(--curve);stroke-width:2"/><line x1="110" y1="110" x2="${110+rp*Math.cos(2.4)}" y2="${110+rp*Math.sin(2.4)}" style="stroke:var(--r-inner);stroke-width:2"/><circle cx="110" cy="110" r="2.5" style="fill:var(--ink)"/><text x="${110+Rp*0.62*Math.cos(-0.6)+6}" y="${110+Rp*0.62*Math.sin(-0.6)-4}" class="g-lab cR">R</text><text x="${110+rp*0.5*Math.cos(2.4)-14}" y="${110+rp*0.5*Math.sin(2.4)-4}" class="g-lab cr">r</text></svg>`;
+    $('#s09t',el).innerHTML = filled ? `Cakram besar πR² = ${fmt(PI*e.R**2)} dikurangi lubang πr² = ${fmt(PI*e.r**2)} memberi luas cincin <b>${fmt(PI*(e.R**2-e.r**2))}</b>.` : `Luas cincin = π(R² − r²) = π(${fmt(e.R)}² − ${fmt(e.r)}²) = <b>${fmt(PI*(e.R**2-e.r**2))}</b>`; };
+  const lab=new Lab($('.lab-h',el),{case:CASES.G2, method:'disk', showSolid:false, n:10, onChange:l=>ring(l)});
+  const F=$('#s09f',el);
+  const fx=()=>{ F.innerHTML=`<h3>Sumbu-x</h3><p style="font-size:15px">\\(D=\\{(x,y)\\mid a\\le x\\le b,\\ g(x)\\le y\\le f(x)\\}\\). Jari-jari luar \\(f(x)\\), dalam \\(g(x)\\), tebal \\(\\Delta x\\).</p><div class="formula">\\[\\Delta V\\approx\\pi\\big(f^2(x)-g^2(x)\\big)\\Delta x\\]\\[V=\\pi\\int_a^b\\big(f^2(x)-g^2(x)\\big)\\,dx\\]</div>`; typeset(F); };
+  const fy=()=>{ F.innerHTML=`<h3>Sumbu-y</h3><p style="font-size:15px">\\(D=\\{(x,y)\\mid c\\le y\\le d,\\ v(y)\\le x\\le w(y)\\}\\). Jari-jari luar \\(w(y)\\), dalam \\(v(y)\\), tebal \\(\\Delta y\\).</p><div class="formula">\\[\\Delta V\\approx\\pi\\big(w^2(y)-v^2(y)\\big)\\Delta y\\]\\[V=\\pi\\int_c^d\\big(w^2(y)-v^2(y)\\big)\\,dy\\]</div>`; typeset(F); };
+  fx(); ring(lab);
+  onSeg(el,'ax',v=>{ lab.set({case: v==='x'?CASES.G2:CASES.G2y, showSolid:false}); v==='x'?fx():fy(); });
+  $('#s09fill',el).addEventListener('click',e=>{ filled=!filled; e.target.setAttribute('aria-pressed',filled); e.target.textContent=filled?'Kosongkan lubang':'Isi lubang'; ring(lab); });
+  return {enter(){ lab.mount(); markDone('s09'); }, leave(){ lab.unmount(); }};
+}});
+
+/* ---------- 10 R DAN r ---------- */
+SLIDES.push({ id:'s10', part:'III', title:'Menentukan Jari-jari Luar dan Dalam', build(el){
+  el.innerHTML = head('III','','Menentukan Jari-jari Luar dan Dalam','Kedua jari-jari diukur dari sumbu putar. Geser garis putar atau pilih pasangan kurva, lalu amati perubahan R dan r.')+
+  `<div class="cols"><div class="stack"><div class="ctrl"><div><span class="lbl">Fungsi pembatas</span>${segHTML('c',[['k','y = x² dan y = 0'],['lens','y = x dan y = x²']],'k')}</div>
+   <label class="rng" id="s10kw"><span class="lbl">Garis putar y = k</span><input type="range" id="s10k" min="-8" max="0" value="-4" aria-label="Posisi garis putar"><b id="s10kv" style="min-width:56px;font-variant-numeric:tabular-nums">−1</b></label></div><div class="lab-h"></div></div>
+  <div class="stack"><div class="card" id="s10i"></div><div class="card plain"><div id="s10q"></div></div></div></div>`;
+  let mode='k', k=-1;
+  const info=()=>{ const I=$('#s10i',el);
+    if(mode==='k'){ const ks=k===0?'':' − ('+fmt(k,2).replace('-','−')+')';
+      I.innerHTML=`<h3>Garis putar y = ${fmt(k,2).replace('-','−')}</h3><p><span class="k-R">R</span> = jarak garis putar ke kurva = \\(x^2-(${fmt(k,2).replace('-','−').replace(',','{,}')})\\)<br><span class="k-r">r</span> = jarak garis putar ke sumbu-x = \\(${fmt(-k,2).replace(',','{,}')}\\)</p>
+      <p style="font-size:15px;margin:0">${k===0?'Pada k = 0 lubang hilang: r = 0 dan cincin menjadi cakram.':k===-1?'Ini contoh dari modul sumber: R = 1 + x², r = 1.':'Semakin jauh garis putar dari daerah, semakin besar lubangnya.'}</p>
+      <div class="formula" style="margin-top:8px">\\[V=\\pi\\int_0^2\\big((x^2-k)^2-k^2\\big)dx\\approx ${fmt(CASES._k.V).replace(',','{,}')}\\]</div>`; }
+    else I.innerHTML=`<span class="tag add">Latihan tambahan</span><h3 style="margin-top:6px">Daerah antara y = x dan y = x², sumbu-x</h3><p style="margin:0">Untuk \\(0\\le x\\le 1\\), kurva \\(y=x\\) berada di atas \\(y=x^2\\). Maka <span class="k-R">R = x</span> dan <span class="k-r">r = x²</span>, dan \\(V=\\pi\\int_0^1 (x^2-x^4)\\,dx=\\tfrac{2\\pi}{15}\\).</p>`;
+    typeset(I); };
+  CASES._k=caseK(-1);
+  const lab=new Lab($('.lab-h',el),{case:CASES._k, method:'disk', showSolid:false, n:10, showInner:true, controls:{n:true,mode:true}});
+  const setK=v=>{ k=v; $('#s10kv',el).textContent=fmt(k,2).replace('-','−'); CASES._k=caseK(k); lab.set({case:CASES._k}); info(); };
+  $('#s10k',el).addEventListener('input',e=>setK(e.target.value/4));
+  onSeg(el,'c',v=>{ mode=v; $('#s10kw',el).hidden = v!=='k'; if(v==='k'){ CASES._k=caseK(k); lab.set({case:CASES._k,showSolid:false}); } else lab.set({case:CASES.lens, showSolid:false}); info(); });
+  info();
+  new Steps($('#s10q',el),{steps:[{title:'Pertanyaan konsep', type:'choice', q:'Mengapa volume cincin dihitung dari luas lingkaran luar dikurangi luas lingkaran dalam?', options:[
+    ch('Lingkaran luar memuat seluruh penampang termasuk lubang; lubang tidak berisi bahan, sehingga luasnya dikurangkan.',1,'Luas cincin = πR² − πr² = π(R² − r²). Tekan “Isi lubang” di slide 09 untuk melihatnya.'),
+    ch('Karena luas cincin sama dengan π(R − r)².',0,'π(R − r)² adalah luas lingkaran berjari-jari R − r. Coba R = 3, r = 1: π(9 − 1) = 8π, sedangkan π(3 − 1)² = 4π.'),
+    ch('Karena jari-jari dalam selalu bernilai 1.',0,'r = 1 hanya pada contoh garis y = −1. Geser garis putar dan amati r berubah.')]}], onDone:()=>markDone('s10')});
+  return labLife(lab);
+}});
+
+/* ---------- 11 CONTOH CINCIN ---------- */
+SLIDES.push({ id:'s11', part:'III', title:'Contoh Metode Cincin', build(el){
+  el.innerHTML = head('III','','Contoh Metode Cincin','Daerah D dibatasi \\(y=x^2\\), sumbu-x, dan \\(x=2\\). Tentukan volume benda bila D diputar terhadap garis \\(y=-1\\).')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="st-h"></div>${note('Kalimat soal di modul sumber menyebut “diputar mengelilingi sumbu-x” lalu “memutar daerah D di sekitar y = −1”. Gambar dan penyelesaiannya memakai garis y = −1, sehingga soal ditulis ulang dengan satu sumbu putar.')}</div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.C, method:'disk', showSolid:false, n:10, s:0.75});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Batas integrasi', type:'choice', q:'Irisan vertikal setebal Δx bergerak pada selang …', options:[ch('\\(0\\le x\\le 2\\)',1,''),ch('\\(-1\\le x\\le 2\\)',0,'Garis y = −1 adalah sumbu putar, bukan batas x daerah.'),ch('\\(0\\le x\\le 4\\)',0,'4 adalah nilai y di x = 2.')]},
+    {title:'Jari-jari luar', type:'expr', v:'x', pre:'R(x) =', ans:'1+x^2', show:'1+x^2', dom:[0.2,1.9],
+      wrong:[{e:'x^2',msg:'Jari-jari diukur dari garis putar y = −1, bukan dari sumbu-x. Tambahkan jarak 1.'},{e:'x^2-1',msg:'Jarak dari y = −1 ke y = x² adalah x² − (−1) = x² + 1.'}],
+      hints:['R = jarak dari garis putar ke tepi terjauh irisan (kurva).','R = x² − (−1).'], sol:'\\(R=1+x^2\\).'},
+    {title:'Jari-jari dalam', type:'expr', v:'x', pre:'r(x) =', ans:'1', show:'1', dom:[0.2,1.9],
+      wrong:[{e:'0',msg:'Daerah tidak menyentuh garis putar; ada celah selebar 1 antara y = −1 dan sumbu-x.'},{e:'x^2',msg:'Itu tinggi irisan. r = jarak dari garis putar ke tepi terdekat irisan (sumbu-x).'}],
+      hints:['Tepi bawah irisan berada di sumbu-x (y = 0).','r = 0 − (−1).'], sol:'\\(r=1\\).', onSolve:()=>lab.sweepElement()},
+    {title:'Bentuk penampang', type:'choice', q:'Penampang hasil putaran irisan adalah …', options:[ch('Cincin berlubang dengan R = 1 + x² dan r = 1',1,'Cincin annular dengan jari-jari dalam 1 dan jari-jari luar 1 + x².'),ch('Cakram penuh berjari-jari x²',0,'Ada celah antara garis putar dan daerah, sehingga terbentuk lubang.')]},
+    {title:'Volume elemen', type:'choice', q:'\\(\\Delta V\\approx\\ ?\\)', options:[
+      ch('\\(\\pi\\big((1+x^2)^2-1^2\\big)\\Delta x\\)',1,''),ch('\\(\\pi(x^2)^2\\Delta x\\)',0,'Itu cakram terhadap sumbu-x. Di sini sumbu putar y = −1.'),ch('\\(\\pi\\big((1+x^2)-1\\big)^2\\Delta x\\)',0,'Luas cincin = π(R² − r²), bukan π(R − r)².')],
+      sol:'\\(\\Delta V\\approx\\pi\\big((x^2+1)^2-1^2\\big)\\Delta x\\).'},
+    {title:'Integral volume', type:'choice', q:'Integral volumenya adalah …', options:[ch('\\(V=\\pi\\int_0^2\\big((1+x^2)^2-1\\big)\\,dx\\)',1,'Integral ini dihitung pada slide berikutnya.'),ch('\\(V=\\pi\\int_{-1}^2\\big((1+x^2)^2-1\\big)\\,dx\\)',0,'Batas x tetap 0 sampai 2.'),ch('\\(V=2\\pi\\int_0^2 x\\big(1+x^2\\big)\\,dx\\)',0,'Itu bentuk kulit tabung, dan sumbunya tidak sesuai.')], onSolve:()=>lab.sweepSolid()}
+  ], onDone:()=>markDone('s11')});
+  return labLife(lab);
+}});
+
+/* ---------- 12 HITUNG CINCIN ---------- */
+SLIDES.push({ id:'s12', part:'III', title:'Menghitung Volume dengan Metode Cincin', build(el){
+  el.innerHTML = head('III','','Menghitung Volume dengan Metode Cincin','Lanjutan contoh slide 11. Buka setiap langkah aljabar, lalu hitung hasil akhirnya sendiri.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="formula"><span class="cap">Parameter</span>\\[R=1+x^2,\\qquad r=1\\]\\[\\Delta V\\approx\\pi\\big[(1+x^2)^2-1^2\\big]\\Delta x\\]</div><div class="st-h"></div>
+  ${note('Modul sumber menulis \\(V=\\pi\\int_0^2 x^4+2x^2\\,dx\\) tanpa kurung; modul menulis \\(\\pi\\int_0^2 (x^4+2x^2)\\,dx\\). Tanda ≈ dipakai untuk ΔV seperti pada rumus umumnya.')}</div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.C, method:'disk', showSolid:true, showElement:false, n:10, mode:'smooth'});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Jabarkan integran', type:'info', sol:'\\[(x^2+1)^2-1^2=x^4+2x^2+1-1=x^4+2x^2\\]'},
+    {title:'Tulis integral tentu', type:'info', sol:'\\[V=\\pi\\int_0^2\\big(x^4+2x^2\\big)\\,dx\\]'},
+    {title:'Antiturunan', type:'info', sol:'\\[V=\\pi\\left[\\tfrac{1}{5}x^5+\\tfrac{2}{3}x^3\\right]_0^2\\]'},
+    {title:'Substitusi batas dan hitung', type:'num', q:'Hitung \\(\\pi\\left(\\tfrac{32}{5}+\\tfrac{16}{3}\\right)\\) dalam bentuk eksak.', ans:{v:176*PI/15,pi:true,tex:'176\\pi/15'}, show:'176π/15',
+      wrong:[{v:32*PI/5,msg:'Itu volume terhadap sumbu-x (slide 06). Garis putar y = −1 menambah suku 2x².'},{v:206*PI/15,msg:'Luas lubang π·1² belum dikurangkan.'},{v:176/15,msg:'Faktor π hilang.'},{v:48*PI/5,msg:'Periksa penyebut bersama: 32/5 + 16/3 = (96 + 80)/15.'}],
+      hints:['Samakan penyebut: 32/5 = 96/15 dan 16/3 = 80/15.'], sol:'\\(V=\\pi\\left(\\frac{96}{15}+\\frac{80}{15}\\right)=\\frac{176\\pi}{15}\\approx 36{,}861\\).', onSolve:()=>lab.sweepSolid()}
+  ], onDone:()=>markDone('s12')});
+  return labLife(lab);
+}});
+
+/* ---------- 13 KULIT TABUNG ---------- */
+SLIDES.push({ id:'s13', part:'IV', title:'Metode Kulit Tabung', build(el){
+  el.innerHTML = head('IV','','Metode Kulit Tabung','Irisan dibuat sejajar sumbu putar. Saat diputar, setiap irisan menjadi tabung tipis berongga, dan benda tersusun dari tabung-tabung konsentris.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack">
+   <div class="card"><h3>Elemen volume</h3><p style="font-size:15.5px">Irisan setinggi <span class="k-h">h</span>, setebal Δx, berjarak <span class="k-R">r</span> dari sumbu putar menjadi kulit tabung. Volumenya ≈ keliling × tinggi × tebal.</p>
+   <div class="formula">\\[\\Delta V\\approx 2\\pi r h\\,\\Delta x\\qquad V=2\\pi\\int_a^b r\\,h\\,dx\\]</div>
+   <p style="font-size:15.5px;margin:10px 0 0">Untuk daerah di bawah \\(y=f(x)\\) yang diputar terhadap sumbu-y: \\(r=x\\), \\(h=f(x)\\).</p>
+   <div class="formula" style="margin-top:8px">\\[\\Delta V\\approx 2\\pi x f(x)\\,\\Delta x\\qquad V=2\\pi\\int_a^b x f(x)\\,dx\\]</div></div>
+   <div class="card plain"><p style="margin:0;font-size:15.5px">Tekan <b>PUTAR IRISAN</b> untuk melihat satu irisan menjadi kulit tabung. Pilih tampilan <b>Irisan</b> untuk melihat benda tersusun dari kulit-kulit konsentris.</p></div>
+   ${note('Modul sumber menyatakan volume diperoleh dengan mengintegralkan luas permukaan yang dihasilkan penampang sejajar sumbu putar. Maksudnya: luas selimut kulit (2πr × h) dikalikan tebal, lalu dijumlahkan.')}</div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.E, method:'shell', showSolid:false, n:10, s:0.62});
+  return {enter(){ lab.mount(); markDone('s13'); }, leave(){ lab.unmount(); }};
+}});
+
+/* ---------- 14 GEOMETRI KULIT (unroll) ---------- */
+class Unroll{
+  constructor(host){ this.host=host; this.v=new Viewer3D(host,{th:0.9,ph:1.15}); this.r=1.2; this.h=1.44; this.d=0.16; this.u=0; }
+  mount(){ if(!this.v.mount()) return; this.v.fit([1.2,1.0,1.4],4.6); this.v.onTheme=()=>this.build(); this.build(); }
+  unmount(){ this.v.unmount(); }
+  set(p){ Object.assign(this,p); if(this.v.mounted) this.build(); }
+  build(){
+    const V=this.v; V.clear(this.g); const g=new THREE.Group(); this.g=g; V.scene.add(g);
+    g.add(axesGroup([-0.6,-0.4,-0.6],[3.4,4.4,8.4],0.3));
+    const col=n=>new THREE.Color(cssVar(n)); const rot=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,-0.6,0),new THREE.Vector3(0,4.6,0)]),new THREE.LineDashedMaterial({color:col('--axis-rot'),dashSize:.2,gapSize:.12})); rot.computeLineDistances(); g.add(rot);
+    const r=this.r, h=this.h, d=this.d, u=Math.min(this.u,0.999), N=96, Rp=r/(1-u), out={pos:[],idx:[]};
+    const P=(s,dl,y)=>{ const a=s/Rp; return [r-Rp+(Rp+dl)*Math.cos(a), y, (Rp+dl)*Math.sin(a)]; };
+    const L=PI*r; const quad=(a,b,c,dd)=>{ const base=out.pos.length/3; out.pos.push(...a,...b,...c,...dd); out.idx.push(base,base+1,base+2,base,base+2,base+3); };
+    for(let i=0;i<N;i++){ const s0=-L+2*L*i/N, s1=-L+2*L*(i+1)/N;
+      quad(P(s0,d,0),P(s1,d,0),P(s1,d,h),P(s0,d,h)); quad(P(s0,0,0),P(s1,0,0),P(s1,0,h),P(s0,0,h));
+      quad(P(s0,0,h),P(s1,0,h),P(s1,d,h),P(s0,d,h)); quad(P(s0,0,0),P(s1,0,0),P(s1,d,0),P(s0,d,0)); }
+    if(u>0.01){ for(const s of [-L,L]) quad(P(s,0,0),P(s,d,0),P(s,d,h),P(s,0,h)); }
+    g.add(new THREE.Mesh(geoFrom(out),new THREE.MeshStandardMaterial({color:col('--slice'),roughness:.55,side:THREE.DoubleSide})));
+  }
+}
+SLIDES.push({ id:'s14', part:'IV', title:'Memahami Geometri Kulit Tabung', build(el){
+  el.innerHTML = head('IV','','Memahami Geometri Kulit Tabung','Buka kulit tabung seperti membuka label kaleng. Hasilnya lembaran hampir berbentuk balok: panjang 2πr, tinggi h, tebal Δx.')+
+  `<div class="cols"><div class="stack"><div class="views"><div class="lab-h"></div><figure class="view"><figcaption>Kulit tabung <i>seret untuk memutar</i></figcaption><div class="c3d" id="s14v"></div></figure></div>
+   <div class="ctrl"><div><span class="lbl">Kurva</span>${segHTML('f',[['E','y = x²'],['D','y = 2x² − x³']],'E')}</div>
+   <label class="rng"><span class="lbl">Posisi x</span><input type="range" id="s14x" min="0" max="999" value="600" aria-label="Posisi irisan"></label>
+   <label class="rng"><span class="lbl">Buka kulit</span><input type="range" id="s14u" min="0" max="100" value="0" aria-label="Buka kulit tabung"><b id="s14uv" style="min-width:44px">0 %</b></label></div></div>
+   <div class="stack"><dl class="read" id="s14r" aria-live="polite"></dl><div class="card"><div class="formula">\\[\\Delta V\\approx\\underbrace{2\\pi r}_{\\text{keliling}}\\cdot\\underbrace{h}_{\\text{tinggi}}\\cdot\\underbrace{\\Delta x}_{\\text{tebal}}\\]</div>
+   <p style="font-size:15px;margin:8px 0 0">Perhatikan: kulit yang jauh dari sumbu (r besar) lebih panjang setelah dibuka, sehingga menyumbang volume lebih besar meski tingginya sama.</p><p style="font-size:13.5px;color:var(--muted);margin:6px 0 0">Tebal kulit pada gambar 3D diperbesar agar terlihat.</p></div></div></div>`;
+  const ur=new Unroll($('#s14v',el)); let cas=CASES.E;
+  const lab=new Lab($('.lab-h',el),{case:cas, method:'shell', only2D:true, n:20, s:0.6, readout:false, controls:false, onChange:l=>upd(l)});
+  function upd(l){ const e=l.elem(); if(!e) return; ur.set({r:e.um, h:Math.max(e.h,0.02)}); const d=e.d;
+    $('#s14r',el).innerHTML=`<div><dt><span class="k-R">r</span> = x</dt><dd>${fmt(e.um)}</dd></div><div><dt><span class="k-h">h</span> = f(x)</dt><dd>${fmt(e.h)}</dd></div><div><dt><span class="k-s">Δx</span></dt><dd>${fmt(d)}</dd></div><div><dt>Keliling 2πr</dt><dd>${fmt(TAU*e.um)}</dd></div><div><dt>ΔV ≈ 2πr·h·Δx</dt><dd>${fmt(TAU*e.um*e.h*d,4)}</dd></div>`; }
+  $('#s14x',el).addEventListener('input',e=>lab.set({s:e.target.value/1000}));
+  $('#s14u',el).addEventListener('input',e=>{ ur.set({u:e.target.value/100}); $('#s14uv',el).textContent=e.target.value+' %'; });
+  onSeg(el,'f',v=>{ cas=CASES[v]; lab.set({case:cas}); });
+  upd(lab);
+  return {enter(){ ur.mount(); upd(lab); markDone('s14'); }, leave(){ ur.unmount(); }};
+}});
+
+/* ---------- 15 KUBIK ---------- */
+SLIDES.push({ id:'s15', part:'IV', title:'Contoh Kulit Tabung: Fungsi Kubik', build(el){
+  el.innerHTML = head('IV','','Contoh Kulit Tabung: Fungsi Kubik','Contoh soal 1: tentukan volume benda padat yang diperoleh dengan memutar daerah yang dibatasi \\(y=2x^2-x^3\\) dan \\(y=0\\) terhadap sumbu-y.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="st-h"></div><div class="card plain"><h3>Mengapa bukan cakram atau cincin?</h3><p style="margin:0;font-size:15.5px">Irisan horizontal menuntut x sebagai fungsi y. Dari \\(y=2x^2-x^3\\), x adalah akar persamaan kubik dan ada dua akar untuk setiap y. Irisan vertikal (kulit tabung) tidak memerlukan pembalikan itu.</p></div></div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.D, method:'shell', showSolid:false, n:10, s:0.62});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Titik potong dengan y = 0', type:'choice', q:'Daerah dibatasi kurva dan sumbu-x. Titik potongnya di …', options:[ch('\\(x=0\\) dan \\(x=2\\)',1,'\\(2x^2-x^3=x^2(2-x)=0\\) memberi x = 0 atau x = 2.'),ch('\\(x=0\\) dan \\(x=4/3\\)',0,'x = 4/3 adalah titik puncak kurva (turunan nol), bukan titik potong.'),ch('\\(x=-2\\) dan \\(x=2\\)',0,'Faktorkan: x²(2 − x) = 0.')], hints:['Faktorkan x² dari 2x² − x³.']},
+    {title:'Jari-jari kulit', type:'expr', v:'x', pre:'r =', ans:'x', show:'x', dom:[0.2,1.9], wrong:[{e:'2x^2-x^3',msg:'Itu tinggi irisan. Jari-jari = jarak irisan ke sumbu-y.'}], hints:['Jarak titik (x, y) ke sumbu-y adalah x.']},
+    {title:'Tinggi kulit', type:'expr', v:'x', pre:'h =', ans:'2x^2-x^3', show:'2x^2-x^3', dom:[0.2,1.9], wrong:[{e:'x^3-2x^2',msg:'Tinggi harus positif: dari y = 0 sampai kurva, h = 2x² − x³.'},{e:'x',msg:'Itu jari-jarinya. Tinggi = panjang irisan vertikal.'}], hints:['Irisan vertikal membentang dari y = 0 sampai kurva.'], onSolve:()=>lab.sweepElement()},
+    {title:'Volume elemen', type:'choice', q:'\\(\\Delta V\\approx\\ ?\\)', options:[ch('\\(2\\pi x(2x^2-x^3)\\,\\Delta x\\)',1,''),ch('\\(\\pi(2x^2-x^3)^2\\,\\Delta x\\)',0,'Itu cakram terhadap sumbu-x.'),ch('\\(2\\pi(2x^2-x^3)\\,\\Delta x\\)',0,'Keliling kulit 2πr memerlukan r = x.')]},
+    {title:'Integral volume', type:'choice', q:'Integral volumenya adalah …', options:[ch('\\(V=2\\pi\\int_0^2 (2x^3-x^4)\\,dx\\)',1,'Dari 2πx(2x² − x³) = 2π(2x³ − x⁴).'),ch('\\(V=2\\pi\\int_0^{4/3} (2x^3-x^4)\\,dx\\)',0,'Daerah membentang sampai x = 2.'),ch('\\(V=\\pi\\int_0^2 (2x^3-x^4)\\,dx\\)',0,'Faktor 2 dari keliling 2πr hilang.')]},
+    {title:'Hitung volume', type:'num', q:'\\(V=2\\pi\\left[\\tfrac12x^4-\\tfrac15x^5\\right]_0^2=\\ ?\\)', ans:{v:16*PI/5,pi:true,tex:'16\\pi/5'}, show:'16π/5',
+      wrong:[{v:8*PI/5,msg:'Faktor 2 dari 2π hilang.'},{v:16/5,msg:'Faktor π hilang.'},{v:2*PI*(8+32/5),msg:'Tanda suku kedua: 8 − 32/5, bukan 8 + 32/5.'}],
+      hints:['½·2⁴ = 8 dan ⅕·2⁵ = 32/5.','2π(8 − 32/5) = 2π · 8/5.'], sol:'\\(V=2\\pi\\left(8-\\tfrac{32}{5}\\right)=\\tfrac{16}{5}\\pi\\approx 10{,}053\\).', onSolve:()=>lab.sweepSolid()}
+  ], onDone:()=>markDone('s15')});
+  return labLife(lab);
+}});
+
+/* ---------- 16 KUADRAT ---------- */
+SLIDES.push({ id:'s16', part:'IV', title:'Contoh Kulit Tabung: Fungsi Kuadrat', build(el){
+  el.innerHTML = head('IV','','Contoh Kulit Tabung: Fungsi Kuadrat','Contoh soal 2: daerah D dibatasi \\(y=x^2\\), sumbu-x, dan \\(x=2\\) diputar mengelilingi sumbu-y. Tentukan volume benda yang terbentuk.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="formula">\\[r=x,\\quad h=x^2,\\quad \\Delta V\\approx 2\\pi x(x^2)\\,\\Delta x=2\\pi x^3\\Delta x\\]</div><div class="st-h"></div>
+  <div class="card plain"><span class="tag">Pemeriksaan hasil</span><h3 style="margin-top:6px">Mengapa hasilnya sama dengan slide 08?</h3><p style="font-size:15.5px">Slide 08 memutar daerah di <i>kiri</i> kurva; slide ini memutar daerah di <i>bawah</i> kurva. Gabungan keduanya adalah persegi panjang 2 × 4, yang diputar terhadap sumbu-y menjadi tabung berjari-jari 2 dan tinggi 4.</p>
+  <div class="formula">\\[\\pi\\cdot 2^2\\cdot 4=16\\pi=8\\pi+8\\pi\\]</div><div class="btns" style="margin-top:8px"><button class="btn sm" id="s16o" aria-pressed="false">Tampilkan daerah slide 08</button></div></div></div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.E, method:'shell', showSolid:false, n:10, s:0.62});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Integral volume', type:'choice', q:'Integral volumenya adalah …', options:[ch('\\(V=2\\pi\\int_0^2 x^3\\,dx\\)',1,''),ch('\\(V=\\pi\\int_0^2 x^4\\,dx\\)',0,'Itu cakram terhadap sumbu-x (slide 06).'),ch('\\(V=2\\pi\\int_0^4 x^3\\,dx\\)',0,'Integral terhadap x, jadi batasnya 0 sampai 2.')], onSolve:()=>lab.sweepElement()},
+    {title:'Hitung volume', type:'num', q:'\\(V=2\\pi\\int_0^2 x^3\\,dx=\\ ?\\)', ans:{v:8*PI,pi:true,tex:'8\\pi'}, show:'8π',
+      wrong:[{v:4*PI,msg:'Faktor 2 dari 2π hilang.'},{v:8,msg:'Faktor π hilang.'},{v:16*PI,msg:'Antiturunan x³ adalah x⁴/4.'}],
+      hints:['∫₀² x³ dx = x⁴/4 dari 0 sampai 2 = 4.'], sol:'\\(V=2\\pi\\int_0^2 x^3\\,dx=\\frac{\\pi}{2}x^4\\Big|_0^2=8\\pi\\).', onSolve:()=>lab.sweepSolid()}
+  ], onDone:()=>markDone('s16')});
+  $('#s16o',el).addEventListener('click',e=>{ const on=e.target.getAttribute('aria-pressed')!=='true'; e.target.setAttribute('aria-pressed',on); e.target.textContent= on?'Sembunyikan daerah slide 08':'Tampilkan daerah slide 08'; lab.set({overlay: on?{poly:CASES.B.poly}:null}); });
+  return labLife(lab);
+}});
+
+/* ---------- 17 KULIT y = -1 ---------- */
+SLIDES.push({ id:'s17', part:'IV', title:'Kulit Tabung dengan Sumbu Putar y = −1', build(el){
+  el.innerHTML = head('IV','','Kulit Tabung dengan Sumbu Putar y = −1','Contoh soal 3: daerah di bawah \\(y=x^2\\), \\(0\\le x\\le 2\\), diputar terhadap garis \\(y=-1\\) dengan metode kulit tabung.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="card"><p style="margin:0;font-size:15.5px">Sumbu putar horizontal, jadi irisan kulit tabung harus <b>horizontal</b> (sejajar sumbu). Ujung kiri irisan di kurva \\(x=\\sqrt{y}\\), ujung kanan di \\(x=2\\).</p></div><div class="st-h"></div>
+  ${note('Kalimat soal di modul sumber menyebut dua sumbu (“diputar mengelilingi sumbu-x” dan “di sekitar y = −1”). Penyelesaiannya memakai y = −1.')}</div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.C, method:'shell', showSolid:false, n:10, s:0.45});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Variabel integrasi', type:'choice', q:'Irisan horizontal punya tebal …', options:[ch('\\(\\Delta y\\), sehingga integral terhadap y',1,''),ch('\\(\\Delta x\\), sehingga integral terhadap x',0,'Irisan vertikal setebal Δx akan menghasilkan cincin bila diputar terhadap y = −1.')]},
+    {title:'Batas integrasi', type:'choice', q:'Ketinggian irisan berjalan dari …', options:[ch('\\(0\\le y\\le 4\\)',1,''),ch('\\(-1\\le y\\le 4\\)',0,'Daerah dimulai di sumbu-x (y = 0); y = −1 adalah sumbu putar.'),ch('\\(0\\le y\\le 2\\)',0,'2 adalah batas x. Di x = 2 kurva mencapai y = 4.')]},
+    {title:'Jari-jari kulit', type:'expr', v:'y', pre:'r =', ans:'y+1', show:'y+1', dom:[0.2,3.8], wrong:[{e:'y',msg:'Jarak diukur dari garis y = −1, bukan dari sumbu-x: r = y − (−1).'},{e:'y-1',msg:'r = y − (−1) = y + 1.'}], hints:['Jarak dari garis y = −1 ke ketinggian y.']},
+    {title:'Tinggi kulit', type:'expr', v:'y', pre:'h =', ans:'2-sqrt(y)', show:'2-√y', dom:[0.2,3.8], ph:'contoh: 2-sqrt(y)',
+      wrong:[{e:'sqrt(y)',msg:'Itu jarak sumbu-y ke kurva. Irisan berada di antara kurva x = √y dan garis x = 2.'},{e:'2-y^2',msg:'Ujung kiri irisan ada di x = √y, bukan y².'},{e:'4-y',msg:'Tinggi diukur sepanjang x, dari x = √y sampai x = 2.'}],
+      hints:['Panjang irisan = x kanan − x kiri.','x kanan = 2, x kiri = √y.'], onSolve:()=>lab.sweepElement()},
+    {title:'Volume elemen', type:'choice', q:'\\(\\Delta V\\approx\\ ?\\)', options:[ch('\\(2\\pi(y+1)(2-\\sqrt{y})\\,\\Delta y\\)',1,''),ch('\\(2\\pi y(2-\\sqrt{y})\\,\\Delta y\\)',0,'Jari-jari diukur dari y = −1.'),ch('\\(\\pi\\big((y+1)^2-1\\big)\\Delta y\\)',0,'Itu bentuk cincin, bukan kulit tabung.')]}
+  ], onDone:()=>markDone('s17')});
+  return labLife(lab);
+}});
+
+/* ---------- 18 INTEGRAL KULIT ---------- */
+SLIDES.push({ id:'s18', part:'IV', title:'Membentuk Integral Metode Kulit Tabung', build(el){
+  el.innerHTML = head('IV','','Membentuk Integral Metode Kulit Tabung','Susun integral contoh soal 3 terlebih dahulu. Solusi terbuka setelah susunanmu benar.')+
+  `<div class="cols"><div class="stack"><div class="ctrl"><div><span class="lbl">Bandingkan metode</span>${segHTML('m',[['shell','Kulit tabung'],['disk','Cincin']],'shell')}</div></div><div class="lab-h"></div></div><div class="stack"><div id="s18b"></div><div id="s18s"></div>
+  <div class="card plain" id="s18x" hidden><span class="tag">Pemeriksaan silang</span><h3 style="margin-top:6px">Dua metode, satu volume</h3><div class="tw"><table class="t"><thead><tr><th>Metode</th><th>Integral</th><th>Hasil</th></tr></thead><tbody><tr><td>Cincin (slide 12)</td><td>\\(\\pi\\int_0^2 (x^4+2x^2)\\,dx\\)</td><td>\\(\\tfrac{176\\pi}{15}\\)</td></tr><tr><td>Kulit tabung</td><td>\\(2\\pi\\int_0^4 (y+1)(2-\\sqrt y)\\,dy\\)</td><td>\\(\\tfrac{176\\pi}{15}\\)</td></tr></tbody></table></div><p style="margin:8px 0 0;font-size:15px">Daerah dan sumbu putarnya sama, sehingga bendanya sama. Integral cincin lebih ringkas di sini karena hanya berisi dua suku polinomial.</p></div></div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.C, method:'shell', showSolid:true, n:10, s:0.45});
+  onSeg(el,'m',v=>lab.set({method:v}));
+  const rO=[{v:'y1',t:'y + 1'},{v:'y',t:'y'},{v:'ym1',t:'y − 1'},{v:'x',t:'x'}], rT={y1:'(y+1)',y:'y',ym1:'(y-1)',x:'x'};
+  const hO=[{v:'2sy',t:'2 − √y'},{v:'sy',t:'√y'},{v:'4y',t:'4 − y'},{v:'x2',t:'x²'}], hT={'2sy':'(2-\\sqrt{y})',sy:'\\sqrt{y}','4y':'(4-y)',x2:'x^2'};
+  new Builder($('#s18b',el),{ tex:v=>`V=${v.k==='1'?'\\pi':v.k==='2'?'2\\pi':'\\square'}\\int_{${v.a||'\\square'}}^{${v.b||'\\square'}}${v.r?rT[v.r]:'\\square'}\\,${v.h?hT[v.h]:'\\square'}\\;${v.v||'d\\square'}`,
+    slots:[{id:'k',label:'Faktor',opts:[{v:'2',t:'2π'},{v:'1',t:'π'}],key:'2',fb:()=>'Keliling kulit adalah 2πr, jadi faktornya 2π.'},
+      {id:'a',label:'Batas bawah',opts:['-1','0','2'].map(x=>({v:x,t:x.replace('-','−')})),key:'0',fb:()=>'Daerah dimulai di y = 0 (sumbu-x).'},
+      {id:'b',label:'Batas atas',opts:['2','4'].map(x=>({v:x,t:x})),key:'4',fb:()=>'Batas y tertinggi daerah adalah y = 4 (kurva di x = 2).'},
+      {id:'r',label:'Jari-jari r',opts:rO,key:'y1',fb:()=>'r diukur dari garis y = −1: r = y + 1.'},
+      {id:'h',label:'Tinggi h',opts:hO,key:'2sy',fb:()=>'h = x kanan − x kiri = 2 − √y.'},
+      {id:'v',label:'Variabel',opts:[{v:'dy',t:'dy'},{v:'dx',t:'dx'}],key:'dy',fb:()=>'Irisan horizontal setebal Δy.'}],
+    hints:['Kulit tabung: V = 2π ∫ r·h d(variabel).','Irisan horizontal → variabel y, dari 0 sampai 4.','r = y + 1 dan h = 2 − √y (slide 17).'],
+    compute:'\\[\\begin{aligned}V&=2\\pi\\int_0^4 (y+1)(2-\\sqrt{y})\\,dy=2\\pi\\int_0^4\\big(2y-y^{3/2}+2-y^{1/2}\\big)dy\\\\&=2\\pi\\Big[y^2-\\tfrac25y^{5/2}+2y-\\tfrac23y^{3/2}\\Big]_0^4=2\\pi\\Big(16-\\tfrac{64}{5}+8-\\tfrac{16}{3}\\Big)\\\\&=2\\pi\\cdot\\tfrac{88}{15}=\\tfrac{176\\pi}{15}\\approx 36{,}861\\end{aligned}\\]',
+    onCalc:()=>{ const x=$('#s18x',el); x.hidden=false; typeset(x); markDone('s18'); lab.sweepSolid(); } });
+  return labLife(lab);
+}});
+
+/* ---------- 19 PERBANDINGAN ---------- */
+SLIDES.push({ id:'s19', part:'V', title:'Perbandingan Tiga Metode', build(el){
+  el.innerHTML = head('V','','Perbandingan Tiga Metode','Klik satu kolom metode untuk melihat elemen volumenya terbentuk. Orientasi irisan terhadap sumbu putar menentukan bentuk integralnya.')+
+  `<div class="cols"><div class="lab-h"></div><div class="stack"><div class="tw"><table class="t" id="s19t"><thead><tr><th>Aspek</th><th><button class="btn sm" data-m="A">Cakram</button></th><th><button class="btn sm" data-m="C">Cincin</button></th><th><button class="btn sm" data-m="E">Kulit tabung</button></th></tr></thead><tbody>
+  <tr><td>Penampang</td><td>Cakram penuh</td><td>Cincin berlubang</td><td>Kulit tabung tipis</td></tr>
+  <tr><td>Lubang</td><td>Tidak ada</td><td>Ada</td><td>Ruang antar-kulit terisi kulit lain</td></tr>
+  <tr><td>Arah irisan</td><td>Tegak lurus sumbu</td><td>Tegak lurus sumbu</td><td>Sejajar sumbu</td></tr>
+  <tr><td>Parameter</td><td><span class="k-R">R</span></td><td><span class="k-R">R</span>, <span class="k-r">r</span></td><td><span class="k-R">r</span>, <span class="k-h">h</span></td></tr>
+  <tr><td>ΔV</td><td>\\(\\pi R^2\\,\\Delta x\\)</td><td>\\(\\pi(R^2-r^2)\\,\\Delta x\\)</td><td>\\(2\\pi r h\\,\\Delta x\\)</td></tr>
+  <tr><td>Integral</td><td>\\(\\pi\\int_a^b R^2\\,dx\\)</td><td>\\(\\pi\\int_a^b (R^2-r^2)\\,dx\\)</td><td>\\(2\\pi\\int_a^b r h\\,dx\\)</td></tr>
+  <tr><td>Contoh</td><td>\\(\\tfrac{32\\pi}{5}\\)</td><td>\\(\\tfrac{176\\pi}{15}\\)</td><td>\\(8\\pi\\)</td></tr></tbody></table></div>
+  <p style="font-size:15px;margin:0">Ganti dx dengan dy bila irisan setebal Δy. Tidak ada metode yang selalu lebih baik; pilihan bergantung pada bentuk daerah dan sumbu putar.</p></div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.A, method:'disk', showSolid:true, n:10, s:0.7});
+  $$('[data-m]',el).forEach(b=>b.addEventListener('click',()=>{ const m=b.dataset.m; lab.set({case:CASES[m], method:m==='E'?'shell':'disk', showSolid:true}); lab.sweepElement(); $$('[data-m]',el).forEach(x=>x.classList.toggle('primary',x===b)); markDone('s19'); }));
+  $('[data-m="A"]',el).classList.add('primary');
+  return labLife(lab);
+}});
+
+/* ---------- 20 DECISION TREE ---------- */
+SLIDES.push({ id:'s20', part:'V', title:'Strategi Memilih Metode', build(el){
+  el.innerHTML = head('V','','Strategi Memilih Metode','Jalankan pohon keputusan untuk tiga daerah dari PDF. Jawab setiap pertanyaan berdasarkan gambar.')+
+  `<div class="cols"><div class="stack"><div class="ctrl"><div><span class="lbl">Kasus</span>${segHTML('c',[['A','y = x², sumbu-x'],['C','y = x², y = −1'],['D','y = 2x² − x³, sumbu-y']],'A')}</div></div><div class="lab-h"></div></div>
+  <div class="stack"><div class="card tree" id="s20t"></div><div class="card plain" id="s20q"></div></div></div>`;
+  const TR={ A:{a1:'ya',a2:'tidak',leaf:'cakram',m:'disk',params:[ch('R = x²',1,''),ch('R = x², r = 1',0,'Tidak ada lubang, jadi tidak ada r.'),ch('r = x, h = x²',0,'Itu parameter kulit tabung terhadap sumbu-y.')],
+         cmp:'Kulit tabung juga mungkin: irisan horizontal, r = y, h = 2 − √y, sehingga \\(V=2\\pi\\int_0^4 y(2-\\sqrt y)\\,dy=\\tfrac{32\\pi}{5}\\). Cakram \\(\\pi\\int_0^2 x^4\\,dx\\) hanya satu suku, jadi lebih sederhana.'},
+       C:{a1:'ya',a2:'ya',leaf:'cincin',m:'disk',params:[ch('R = 1 + x², r = 1',1,''),ch('R = x², r = 0',0,'Jari-jari diukur dari y = −1.'),ch('R = 1 + x², r = x²',0,'Tepi dalam irisan ada di sumbu-x, yang berjarak 1 dari garis putar.')],
+         cmp:'Kulit tabung juga mungkin (slide 17–18): \\(2\\pi\\int_0^4 (y+1)(2-\\sqrt y)\\,dy\\), empat suku berpangkat pecahan. Cincin \\(\\pi\\int_0^2 (x^4+2x^2)\\,dx\\) lebih ringkas. Keduanya \\(\\tfrac{176\\pi}{15}\\).'},
+       D:{a1:'tidak',leaf:'kulit',m:'shell',params:[ch('r = x, h = 2x² − x³',1,''),ch('r = 2x² − x³, h = x',0,'Jari-jari adalah jarak ke sumbu-y, yaitu x.'),ch('R = 2x² − x³',0,'Itu parameter cakram terhadap sumbu-x.')],
+         cmp:'Cincin secara prinsip mungkin, tetapi R dan r adalah dua akar x dari \\(y=2x^2-x^3\\) untuk setiap y (persamaan kubik). Kulit tabung menghindari pembalikan itu.'} };
+  let cs='A', path=[], stage='q1'; const done=new Set();
+  const lab=new Lab($('.lab-h',el),{case:CASES.A, method:'disk', showSolid:true, n:10, s:0.6});
+  function tree(){
+    const on=k=>path.includes(k)?' on':''; const eon=k=>path.includes(k)?' on':'';
+    $('#s20t',el).innerHTML=`<svg viewBox="0 0 520 250" role="img" aria-label="Pohon keputusan pemilihan metode">
+      <path class="ed${eon('e1')}" d="M260 64 L140 116"/><path class="ed${eon('e2')}" d="M260 64 L400 196"/><path class="ed${eon('e3')}" d="M140 152 L70 196"/><path class="ed${eon('e4')}" d="M140 152 L215 196"/>
+      <text class="el" x="186" y="86">ya</text><text class="el" x="340" y="120">tidak</text><text class="el" x="84" y="178">tidak</text><text class="el" x="186" y="178">ya</text>
+      <g class="nd${on('n1')}"><rect x="90" y="8" width="340" height="56" rx="8"/><text x="260" y="31" text-anchor="middle">Irisan tegak lurus sumbu: jari-jarinya mudah</text><text x="260" y="49" text-anchor="middle">ditulis dalam variabel sepanjang sumbu?</text></g>
+      <g class="nd${on('n2')}"><rect x="20" y="116" width="240" height="36" rx="8"/><text x="140" y="139" text-anchor="middle">Ada celah antara daerah dan sumbu?</text></g>
+      <g class="nd leaf${on('cakram')}"><rect x="10" y="196" width="120" height="40" rx="8"/><text x="70" y="221" text-anchor="middle">Metode cakram</text></g>
+      <g class="nd leaf${on('cincin')}"><rect x="150" y="196" width="130" height="40" rx="8"/><text x="215" y="221" text-anchor="middle">Metode cincin</text></g>
+      <g class="nd leaf${on('kulit')}"><rect x="320" y="196" width="160" height="40" rx="8"/><text x="400" y="221" text-anchor="middle">Metode kulit tabung</text></g></svg>`; }
+  function q(){
+    const Q=$('#s20q',el), T=TR[cs];
+    if(stage==='q1'||stage==='q2'){ const txt= stage==='q1' ? 'Buat irisan tegak lurus sumbu putar. Apakah jari-jari irisan mudah ditulis dalam variabel sepanjang sumbu?' : 'Apakah ada celah antara daerah dan sumbu putar, sehingga penampang berlubang?';
+      Q.innerHTML=`<h3>${stage==='q1'?'Pertanyaan 1':'Pertanyaan 2'}</h3><p>${txt}</p><div class="btns"><button class="btn" data-a="ya">Ya</button><button class="btn" data-a="tidak">Tidak</button></div><div class="fb"></div>`;
+      $$('[data-a]',Q).forEach(b=>b.addEventListener('click',()=>{ const a=b.dataset.a, key= stage==='q1'?T.a1:T.a2, f=$('.fb',Q);
+        if(a!==key){ f.className='fb err'; f.innerHTML='<b class="st">Belum tepat.</b>'+(stage==='q1'? (cs==='D'?'Sumbu putar adalah sumbu-y, jadi irisan tegak lurusnya horizontal dan butuh x sebagai fungsi y dari persamaan kubik.':'Irisan vertikal pada posisi x punya jari-jari yang langsung terbaca dari kurva y = x².') : (cs==='C'?'Garis putar y = −1 berjarak 1 dari sumbu-x, tempat daerah dimulai.':'Daerah menempel pada sumbu-x, jadi tidak ada celah.')); return; }
+        if(stage==='q1'){ path.push('n1', a==='ya'?'e1':'e2'); if(a==='ya'){ path.push('n2'); stage='q2'; } else { path.push('kulit'); stage='p'; } }
+        else { path.push(a==='ya'?'e4':'e3', a==='ya'?'cincin':'cakram'); stage='p'; }
+        tree(); q(); })); return; }
+    if(stage==='p'){ Q.innerHTML=`<h3>Metode ${T.leaf}${T.leaf==='kulit'?' tabung':''}</h3><p>Dari gambar, tentukan parameter geometrisnya.</p><div class="pp"></div>`;
+      lab.set({method:T.m}); lab.sweepElement();
+      new Steps($('.pp',Q),{steps:[{title:'Parameter', type:'choice', options:T.params}], onDone:()=>{ stage='c'; done.add(cs); if(done.size===3) markDone('s20'); const c=document.createElement('div'); c.innerHTML=`<p style="margin-top:12px"><b>Bandingkan kompleksitas.</b> ${T.cmp}</p><p style="font-size:14px;color:var(--muted);margin:0">Selesai: ${done.size} dari 3 kasus.</p>`; Q.appendChild(c); typeset(c); }}); }
+  }
+  function start(c){ cs=c; path=[]; stage='q1'; lab.set({case:CASES[c], method:'disk', showSolid:true}); tree(); q(); }
+  onSeg(el,'c',start); start('A');
+  return labLife(lab);
+}});
+
+/* ---------- 21 PROBLEM SOLVER ---------- */
+SLIDES.push({ id:'s21', part:'V', title:'Interactive Problem Solver', build(el){
+  el.innerHTML = head('V','','Interactive Problem Solver','Selesaikan soal ini dari awal tanpa melihat slide 15. Setiap tahap terbuka setelah tahap sebelumnya benar.')+
+  `<div class="cols"><div class="stack"><div class="card"><b>Soal.</b> Tentukan volume benda padat yang diperoleh dengan memutar daerah yang dibatasi oleh \\(y=2x^2-x^3\\) dan \\(y=0\\) terhadap sumbu-y.</div><div class="lab-h"></div></div><div class="st-h"></div></div>`;
+  const lab=new Lab($('.lab-h',el),{case:CASES.D, method:'shell', showSolid:false, showElement:false, n:10, s:0.6});
+  new Steps($('.st-h',el),{steps:[
+    {title:'Identifikasi daerah', type:'choice', q:'Daerah yang diputar adalah …', options:[ch('di bawah kurva, di atas sumbu-x, antara \\(x=0\\) dan \\(x=2\\)',1,''),ch('di bawah kurva, antara \\(x=0\\) dan \\(x=4/3\\)',0,'x = 4/3 adalah puncak kurva. Kurva kembali memotong sumbu-x di x = 2.'),ch('di atas kurva sampai \\(y=1\\)',0,'Batas daerah adalah kurva dan y = 0.')], hints:['Faktorkan: 2x² − x³ = x²(2 − x).']},
+    {title:'Sumbu putar', type:'choice', options:[ch('Sumbu-y',1,''),ch('Sumbu-x',0,'Soal menyebut “terhadap sumbu y”.')]},
+    {title:'Pilih metode', type:'choice', q:'Metode yang paling sesuai adalah …', options:[ch('Kulit tabung',1,'Irisan vertikal sejajar sumbu-y; r dan h langsung terbaca dari kurva.'),
+      ch('Cakram',0,'Irisan horizontal daerah ini tidak menempel pada sumbu-y, sehingga penampangnya cincin, bukan cakram.'),
+      ch('Cincin',0,'Mungkin secara prinsip, tetapi R dan r adalah dua akar x dari persamaan kubik y = 2x² − x³. Lihat bentuk cincinnya di grafik; coba metode lain.')],
+      onSolve:()=>lab.set({showElement:true,method:'shell'})},
+    {title:'Variabel dan batas', type:'choice', options:[ch('\\(x\\), dari 0 sampai 2',1,''),ch('\\(y\\), dari 0 sampai \\(32/27\\)',0,'Itu untuk irisan horizontal. Kulit tabung terhadap sumbu-y memakai irisan vertikal.'),ch('\\(x\\), dari 0 sampai \\(4/3\\)',0,'Daerah membentang sampai x = 2.')]},
+    {title:'Parameter geometris', type:'choice', options:[ch('\\(r=x,\\ h=2x^2-x^3\\)',1,''),ch('\\(r=2x^2-x^3,\\ h=x\\)',0,'Jari-jari adalah jarak ke sumbu-y.'),ch('\\(r=x,\\ h=x^3-2x^2\\)',0,'Tinggi harus positif pada 0 < x < 2.')], onSolve:()=>lab.sweepElement()},
+    {title:'Bentuk integral', type:'choice', options:[ch('\\(V=2\\pi\\int_0^2 x(2x^2-x^3)\\,dx\\)',1,''),ch('\\(V=\\pi\\int_0^2 (2x^2-x^3)^2\\,dx\\)',0,'Itu cakram terhadap sumbu-x.'),ch('\\(V=2\\pi\\int_0^2 (2x^2-x^3)\\,dx\\)',0,'Faktor r = x hilang.')]},
+    {title:'Hitung volume', type:'num', revealAfterAttempt:true, q:'Tuliskan hasilnya dalam bentuk eksak.', ans:{v:16*PI/5,pi:true,tex:'16\\pi/5'}, show:'16π/5',
+      wrong:[{v:8*PI/5,msg:'Faktor 2 dari 2π hilang.'},{v:16/5,msg:'Faktor π hilang.'},{v:2*PI*(8+32/5),msg:'Tanda suku kedua salah.'}], hints:['2π∫(2x³ − x⁴)dx = 2π[x⁴/2 − x⁵/5].'], sol:'\\(V=2\\pi\\big(8-\\tfrac{32}{5}\\big)=\\tfrac{16\\pi}{5}\\)', onSolve:()=>lab.sweepSolid()},
+    {title:'Periksa hasil', type:'choice', q:'Apakah \\(\\tfrac{16\\pi}{5}\\approx 10{,}05\\) masuk akal?', options:[
+      ch('Ya: positif dan lebih kecil dari tabung pembungkus berjari-jari 2 dan tinggi 32/27, yang volumenya \\(\\tfrac{128\\pi}{27}\\approx 14{,}9\\)',1,'Benda berada di dalam tabung itu, jadi volumenya harus lebih kecil.'),
+      ch('Tidak, volume harus lebih besar dari tabung pembungkus',0,'Benda seluruhnya berada di dalam tabung pembungkus.'),ch('Tidak dapat diperiksa tanpa kalkulator',0,'Tabung pembungkus memberi batas atas sederhana.')]}
+  ], onDone:()=>markDone('s21')});
+  return labLife(lab);
+}});
+
+/* ---------- 22 LATIHAN TERBIMBING ---------- */
+SLIDES.push({ id:'s22', part:'V', title:'Latihan Terbimbing', build(el){
+  el.innerHTML = head('V','','Latihan Terbimbing','Tiga soal baru yang mengikuti pola contoh PDF. Kerjakan tahap demi tahap.')+
+  `<div class="tabs" role="tablist"><button role="tab" data-t="0" aria-selected="true">L1 · cakram</button><button role="tab" data-t="1" aria-selected="false">L2 · cincin</button><button role="tab" data-t="2" aria-selected="false">L3 · kulit tabung</button></div>
+  <div class="cols" style="margin-top:12px"><div class="stack"><div class="card" id="s22p"></div><div class="lab-h"></div></div><div class="st-h"></div></div>`;
+  const E=[
+    {cas:CASES.L1, m:'disk', p:'<span class="tag add">Latihan tambahan</span><p style="margin:8px 0 0">Daerah dibatasi \\(y=\\sqrt{x}\\), \\(y=0\\), dan \\(x=4\\) diputar terhadap sumbu-x. Tentukan volumenya.</p>', steps:[
+      {title:'Identifikasi daerah', type:'choice', options:[ch('Di bawah \\(y=\\sqrt x\\), di atas sumbu-x, \\(0\\le x\\le 4\\)',1,''),ch('Di kiri \\(y=\\sqrt x\\), \\(0\\le y\\le 4\\)',0,'Batas yang disebut adalah y = 0 dan x = 4.')]},
+      {title:'Pilih metode', type:'choice', options:[ch('Cakram',1,'Daerah menempel pada sumbu putar, irisan vertikal → cakram penuh.'),ch('Cincin',0,'Tidak ada celah antara daerah dan sumbu-x.'),ch('Kulit tabung',0,'Mungkin, tetapi butuh irisan horizontal dan x = y²; cakram lebih langsung.')]},
+      {title:'Batas integrasi', type:'choice', options:[ch('\\(0\\le x\\le 4\\)',1,''),ch('\\(0\\le x\\le 2\\)',0,'2 adalah nilai y di x = 4.')]},
+      {title:'Jari-jari', type:'expr', v:'x', pre:'R(x) =', ans:'sqrt(x)', show:'√x', dom:[0.3,3.8], ph:'contoh: sqrt(x)', wrong:[{e:'x',msg:'Jari-jari = tinggi kurva = √x.'}], hints:['Jari-jari = jarak sumbu-x ke kurva.']},
+      {title:'Bentuk integral', type:'choice', options:[ch('\\(V=\\pi\\int_0^4 x\\,dx\\)',1,'R² = (√x)² = x.'),ch('\\(V=\\pi\\int_0^4 \\sqrt{x}\\,dx\\)',0,'Jari-jari harus dikuadratkan.'),ch('\\(V=2\\pi\\int_0^4 x\\sqrt{x}\\,dx\\)',0,'Itu kulit tabung terhadap sumbu-y.')]},
+      {title:'Hitung volume', type:'num', ans:{v:8*PI,pi:true,tex:'8\\pi'}, show:'8π', wrong:[{v:8,msg:'Faktor π hilang.'},{v:16*PI/3,msg:'Ini π∫√x dx; jari-jari belum dikuadratkan.'}], hints:['π·x²/2 dari 0 sampai 4.'], sol:'\\(V=\\pi\\int_0^4 x\\,dx=\\tfrac{\\pi}{2}x^2\\big|_0^4=8\\pi\\)'}]},
+    {cas:CASES.lens, m:'disk', p:'<span class="tag add">Latihan tambahan</span><p style="margin:8px 0 0">Daerah di antara \\(y=x\\) dan \\(y=x^2\\) diputar terhadap sumbu-x. Tentukan volumenya.</p>', steps:[
+      {title:'Identifikasi daerah', type:'choice', q:'Kedua kurva berpotongan di …', options:[ch('\\(x=0\\) dan \\(x=1\\)',1,'x = x² ⇔ x(x − 1) = 0.'),ch('\\(x=0\\) dan \\(x=2\\)',0,'Selesaikan x = x².')]},
+      {title:'Pilih metode', type:'choice', options:[ch('Cincin',1,'Irisan vertikal tidak menyentuh sumbu-x, kecuali di ujung, sehingga terbentuk lubang.'),ch('Cakram',0,'Ada celah antara sumbu-x dan kurva bawah y = x².')]},
+      {title:'Batas integrasi', type:'choice', options:[ch('\\(0\\le x\\le 1\\)',1,''),ch('\\(0\\le y\\le 1\\)',0,'Irisan vertikal setebal Δx; batasnya nilai x.')]},
+      {title:'Jari-jari dalam', type:'expr', v:'x', pre:'r(x) =', ans:'x^2', show:'x^2', dom:[0.1,0.9], wrong:[{e:'x',msg:'Untuk 0 < x < 1, x² < x. Kurva bawah (lebih dekat sumbu) adalah y = x².'}], hints:['r = jarak sumbu-x ke kurva yang lebih bawah. Coba x = 0,5.'], okMsg:'Dan jari-jari luarnya R = x.'},
+      {title:'Bentuk integral', type:'choice', options:[ch('\\(V=\\pi\\int_0^1 (x^2-x^4)\\,dx\\)',1,'R² − r² = x² − x⁴.'),ch('\\(V=\\pi\\int_0^1 (x-x^2)^2\\,dx\\)',0,'Luas cincin = π(R² − r²), bukan π(R − r)².'),ch('\\(V=\\pi\\int_0^1 (x^4-x^2)\\,dx\\)',0,'R harus jari-jari luar: R² − r² = x² − x⁴.')]},
+      {title:'Hitung volume', type:'num', ans:{v:2*PI/15,pi:true,tex:'2\\pi/15'}, show:'2π/15', wrong:[{v:PI/30,msg:'Ini π∫(x − x²)² dx; gunakan R² − r².'},{v:-2*PI/15,msg:'Tanda negatif: R dan r tertukar.'}], hints:['1/3 − 1/5 = 2/15.'], sol:'\\(V=\\pi\\left[\\tfrac{x^3}{3}-\\tfrac{x^5}{5}\\right]_0^1=\\tfrac{2\\pi}{15}\\)'}]},
+    {cas:CASES.L3, m:'shell', p:'<span class="tag add">Latihan tambahan</span><p style="margin:8px 0 0">Daerah dibatasi \\(y=x-x^2\\) dan \\(y=0\\) diputar terhadap sumbu-y. Tentukan volumenya.</p>', steps:[
+      {title:'Identifikasi daerah', type:'choice', q:'Kurva memotong sumbu-x di …', options:[ch('\\(x=0\\) dan \\(x=1\\)',1,'x − x² = x(1 − x).'),ch('\\(x=0\\) dan \\(x=1/2\\)',0,'x = 1/2 adalah puncak kurva.')]},
+      {title:'Pilih metode', type:'choice', options:[ch('Kulit tabung',1,'Irisan vertikal sejajar sumbu-y; r = x dan h = x − x².'),ch('Cakram',0,'Irisan horizontal tidak menempel sumbu-y; penampangnya cincin, dan perlu menyelesaikan persamaan kuadrat untuk x.')]},
+      {title:'Batas integrasi', type:'choice', options:[ch('\\(0\\le x\\le 1\\)',1,''),ch('\\(0\\le y\\le 1/4\\)',0,'Itu batas untuk irisan horizontal.')]},
+      {title:'Tinggi kulit', type:'expr', v:'x', pre:'h(x) =', ans:'x-x^2', show:'x-x^2', dom:[0.1,0.9], wrong:[{e:'x^2-x',msg:'Tinggi harus positif pada 0 < x < 1.'}], hints:['Dari y = 0 sampai kurva.'], okMsg:'Jari-jarinya r = x.'},
+      {title:'Bentuk integral', type:'choice', options:[ch('\\(V=2\\pi\\int_0^1 x(x-x^2)\\,dx\\)',1,''),ch('\\(V=\\pi\\int_0^1 (x-x^2)^2\\,dx\\)',0,'Itu cakram terhadap sumbu-x.')]},
+      {title:'Hitung volume', type:'num', ans:{v:PI/6,pi:true,tex:'\\pi/6'}, show:'π/6', wrong:[{v:PI/12,msg:'Faktor 2 dari 2π hilang.'},{v:1/6,msg:'Faktor π hilang.'}], hints:['∫(x² − x³)dx = 1/3 − 1/4 = 1/12.'], sol:'\\(V=2\\pi\\left(\\tfrac13-\\tfrac14\\right)=\\tfrac{\\pi}{6}\\)'}]}];
+  const lab=new Lab($('.lab-h',el),{case:E[0].cas, method:'disk', showSolid:false, n:10});
+  const fin=new Set();
+  const show=k=>{ $$('[role="tab"]',el).forEach(b=>b.setAttribute('aria-selected',b.dataset.t==k)); const ex=E[k]; const p=$('#s22p',el); p.innerHTML=ex.p; typeset(p);
+    lab.set({case:ex.cas, method:ex.m, showSolid:false});
+    const steps=ex.steps.map((s,i)=>i===ex.steps.length-1?Object.assign({},s,{onSolve:()=>lab.sweepSolid()}):s);
+    new Steps($('.st-h',el),{labels:L_EN, steps, onDone:()=>{ fin.add(k); if(fin.size===3) markDone('s22'); }}); };
+  $$('[role="tab"]',el).forEach(b=>b.addEventListener('click',()=>show(+b.dataset.t)));
+  show(0);
+  return labLife(lab);
+}});
+
+/* ---------- 23 QUIZ ---------- */
+const QUIZ = [
+  {type:'mc', q:'Elemen volume metode cakram untuk putaran terhadap sumbu-x adalah …', o:['\\(\\pi f^2(x)\\,\\Delta x\\)','\\(2\\pi x f(x)\\,\\Delta x\\)','\\(\\pi f(x)\\,\\Delta x\\)','\\(f^2(x)\\,\\Delta x\\)'], a:0,
+   fb:['Luas cakram πR² dengan R = f(x), dikali tebal Δx.','Itu elemen kulit tabung terhadap sumbu-y.','Jari-jari harus dikuadratkan.','Faktor π dari luas lingkaran hilang.']},
+  {type:'tf', q:'“Metode kulit tabung selalu lebih mudah daripada metode cakram.”', a:1, fb:['Contoh y = x² terhadap sumbu-x lebih ringkas dengan cakram (satu suku) dibanding kulit tabung.','Pilihan metode bergantung pada geometri daerah dan sumbu putar.']},
+  {type:'dnd', q:'Pasangkan bentuk penampang dengan metodenya. Ketuk sebuah bentuk, lalu ketuk metodenya (atau seret).', items:[['disk','Cakram penuh'],['washer','Cincin berlubang'],['shell','Kulit tabung tipis']], targets:[['disk','Metode cakram'],['washer','Metode cincin'],['shell','Metode kulit tabung']],
+   fbOk:'Penampang cakram → metode cakram, cincin → metode cincin, kulit tabung → metode kulit tabung.', fbBad:'Bentuk penampang menentukan metode: tanpa lubang → cakram, berlubang → cincin, tabung tipis sejajar sumbu → kulit tabung.'},
+  {type:'num', q:'Daerah di bawah \\(y=x\\), \\(0\\le x\\le 3\\), diputar terhadap sumbu-x. Berapa volumenya? (bentuk eksak)', ans:{v:9*PI,pi:true}, show:'9π',
+   fbOk:'\\(V=\\pi\\int_0^3 x^2\\,dx=9\\pi\\). Benda ini kerucut berjari-jari 3, tinggi 3: \\(\\tfrac13\\pi\\cdot 3^2\\cdot 3=9\\pi\\).', wrong:[{v:9,m:'Faktor π hilang.'},{v:27*PI,m:'∫x² dx = x³/3.'},{v:9*PI/2,m:'Ini π∫x dx; jari-jari harus dikuadratkan.'}], fbBad:'Gunakan \\(V=\\pi\\int_0^3 x^2\\,dx\\).'},
+  {type:'graph', q:'Daerah di bawah \\(y=x^2\\), \\(0\\le x\\le 2\\), diputar terhadap garis \\(y=-1\\). Penampang benda yang dipotong melalui sumbunya tampak seperti …', cases:['C','A','E'], a:0,
+   fb:['Ada celah selebar 1 antara daerah dan garis putar, sehingga benda berlubang di tengah.','Ini putaran terhadap sumbu-x: tanpa lubang.','Ini putaran terhadap sumbu-y.']},
+  {type:'mc', q:'Daerah di bawah \\(y=2x^2-x^3\\), \\(0\\le x\\le 2\\), diputar terhadap sumbu-y. Metode yang paling praktis adalah …', o:['Kulit tabung','Cakram','Cincin'], a:0,
+   fb:['r = x dan h = 2x² − x³ langsung terbaca.','Penampang horizontalnya berlubang, jadi bukan cakram.','Mungkin, tetapi R dan r adalah akar persamaan kubik.']},
+  {type:'build', q:'Susun integral volume daerah \\(y=x^2\\), \\(0\\le x\\le 2\\), yang diputar terhadap \\(y=-1\\) dengan metode cincin.', key:{a:'0',b:'2',R:'1x2',r:'1'},
+   fbOk:'\\(V=\\pi\\int_0^2\\big((1+x^2)^2-1^2\\big)dx=\\tfrac{176\\pi}{15}\\).', fbBad:'R = 1 + x² dan r = 1 diukur dari garis y = −1; batasnya 0 sampai 2.'},
+  {type:'mc', q:'Daerah antara \\(y=x\\) dan \\(y=x^2\\) diputar terhadap sumbu-x. Jari-jari luar dan dalamnya …', o:['R = x, r = x²','R = x², r = x','R = x, r = 0','R = 1, r = x'], a:0,
+   fb:['Pada 0 < x < 1, y = x berada di atas y = x².','Tertukar: kurva yang lebih jauh dari sumbu adalah y = x.','Ada lubang karena kurva bawah y = x² tidak berimpit dengan sumbu.','R berubah mengikuti x.']},
+  {type:'mc', q:'Metode cakram untuk daerah \\(y=x^2\\), sumbu-y, dan \\(y=4\\) diputar terhadap sumbu-y memakai batas …', o:['\\(0\\le y\\le 4\\), terhadap dy','\\(0\\le x\\le 2\\), terhadap dx','\\(0\\le y\\le 2\\), terhadap dy'], a:0,
+   fb:['Irisan horizontal setebal Δy, dari y = 0 sampai y = 4.','Irisan tegak lurus sumbu-y adalah horizontal, jadi variabelnya y.','2 adalah nilai x di ujung kurva.']},
+  {type:'tf', q:'“Metode cincin dan kulit tabung untuk daerah dan sumbu putar yang sama memberikan volume yang sama.”', a:0, fb:['Contoh y = x² terhadap y = −1 dengan cincin (slide 12) dan kulit tabung (slide 18) sama-sama menghasilkan 176π/15.','Bendanya sama, jadi volumenya pasti sama; hanya cara mengirisnya yang berbeda.']}
+];
+SLIDES.push({ id:'s23', part:'V', title:'Quiz', build(el){
+  el.innerHTML = head('V','','Quiz','10 soal tentang seluruh materi. Setiap jawaban disertai umpan balik matematis.')+`<div class="cols"><div class="stack" id="qz"></div><div class="stack"><div class="card"><h3>Skor</h3><div id="qsc" style="font-size:15.5px"></div></div><div class="card plain" id="qrev" hidden></div></div></div>`;
+  const R=QUIZ.map(()=>null); let cur=0; const box=$('#qz',el);
+  const dots=()=>`<div class="qdots">${QUIZ.map((_,i)=>`<button class="qdot ${i===cur?'cur':''} ${R[i]===true?'okk':R[i]===false?'bad':''}" data-q="${i}" aria-label="Soal ${i+1}">${i+1}</button>`).join('')}</div>`;
+  function score(){ const ok=R.filter(x=>x===true).length, ans=R.filter(x=>x!==null).length; $('#qsc',el).innerHTML=`<p style="margin:0"><b style="font-size:28px;font-family:var(--font-display)">${ok}</b> benar dari ${ans} soal dijawab (total 10).</p>`;
+    if(ans===10){ P.quiz=ok; saveP(); markDone('s23'); const rv=$('#qrev',el); rv.hidden=false; rv.innerHTML=`<h3>Ringkasan</h3><p>Skor akhir ${ok}/10. ${ok>=8?'Pemahamanmu sudah kuat.':ok>=5?'Ulangi slide yang terkait dengan soal yang salah.':'Pelajari ulang Bagian II–IV sebelum mencoba lagi.'}</p><button class="btn sm" id="qre">Ulangi kuis</button>`; $('#qre',el).addEventListener('click',()=>{ R.fill(null); cur=0; rv.hidden=true; render(); }); } }
+  function fbSet(f,ok,msg){ f.className='fb '+(ok?'ok':'err'); f.innerHTML=`<b class="st">${ok?'Benar.':'Belum tepat.'}</b>${msg}`; typeset(f); }
+  function render(){
+    const q=QUIZ[cur], locked=R[cur]!==null; let body='';
+    if(q.type==='mc'||q.type==='tf'){ const o=q.type==='tf'?['Benar','Salah']:q.o; body=`<div class="opts">${o.map((t,i)=>`<button class="opt" data-o="${i}" aria-pressed="false" ${locked?'disabled':''}>${t}</button>`).join('')}</div>`; }
+    if(q.type==='graph') body=`<div class="thumbs">${q.cases.map((c,i)=>`<button class="opt" data-o="${i}" aria-pressed="false" ${locked?'disabled':''}>${sectionSVG(CASES[c],'Pilihan '+(i+1))}<span style="font-size:13.5px">Pilihan ${String.fromCharCode(65+i)}</span></button>`).join('')}</div>`;
+    if(q.type==='num') body=`<div class="inrow"><span class="pre">V =</span><input class="inp" id="qnum" type="text" placeholder="contoh: 9π" ${locked?'disabled':''} aria-label="Volume"></div>`;
+    if(q.type==='build'){ const sel=(id,opts)=>`<select id="qb-${id}" ${locked?'disabled':''} style="min-height:40px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:16px;padding:2px 6px"><option value="">□</option>${opts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('')}</select>`;
+      body=`<div class="formula" style="font-size:18px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">V = π ∫ dari ${sel('a',[['0','0'],['-1','−1'],['1','1']])} sampai ${sel('b',[['2','2'],['4','4']])} ( [ ${sel('R',[['1x2','1 + x²'],['x2','x²'],['x21','x² − 1']])} ]² − [ ${sel('r',[['1','1'],['0','0'],['x2','x²']])} ]² ) dx</div>`; }
+    if(q.type==='dnd'){ body=`<div class="dnd"><div class="pool" data-z="pool">${q.items.map(([k,t])=>`<button class="item" draggable="true" data-i="${k}" aria-pressed="false">${iconSVG(k)}${t}</button>`).join('')}</div><div class="targets">${q.targets.map(([k,t])=>`<div class="target" data-z="${k}" tabindex="0" role="button" aria-label="${t}"><b>${t}</b></div>`).join('')}</div></div>`; }
+    box.innerHTML=`${dots()}<div class="card"><div class="eyebrow">Soal ${cur+1} dari 10 · ${{mc:'Pilihan ganda',tf:'Benar atau salah',dnd:'Drag and drop',num:'Isian numerik',graph:'Identifikasi gambar',build:'Penyusunan integral'}[q.type]}</div><p style="font-size:18px;margin-top:6px">${q.q}</p>${body}
+      <div class="btns" style="margin-top:12px"><button class="btn sm primary caps" id="qchk" ${locked?'hidden':''}>Periksa</button><button class="btn sm" id="qprev" ${cur===0?'disabled':''}>‹ Soal sebelumnya</button><button class="btn sm" id="qnext" ${cur===9?'disabled':''}>Soal berikutnya ›</button></div><div class="fb" id="qfb" style="margin-top:10px"></div></div>`;
+    typeset(box);
+    let sel=null; $$('.opt',box).forEach(b=>b.addEventListener('click',()=>{ sel=+b.dataset.o; $$('.opt',box).forEach(x=>x.setAttribute('aria-pressed',x===b)); }));
+    $$('.qdot',box).forEach(b=>b.addEventListener('click',()=>{ cur=+b.dataset.q; render(); }));
+    $('#qprev',box).addEventListener('click',()=>{ cur--; render(); }); $('#qnext',box).addEventListener('click',()=>{ cur++; render(); });
+    if(q.type==='dnd') wireDnd(box);
+    const f=$('#qfb',box);
+    if(locked && q._last) fbSet(f,R[cur],q._last);
+    $('#qchk',box).addEventListener('click',()=>{
+      let ok=false, msg='';
+      if(q.type==='mc'||q.type==='tf'||q.type==='graph'){ if(sel==null){ f.className='fb warn'; f.innerHTML='<b class="st">Hampir.</b>Pilih satu jawaban terlebih dahulu.'; return; } ok=sel===q.a; msg=q.fb[sel]; $(`.opt[data-o="${sel}"]`,box).classList.add(ok?'okk':'bad'); if(!ok) $(`.opt[data-o="${q.a}"]`,box).classList.add('okk'); }
+      if(q.type==='num'){ const raw=$('#qnum',box).value, v=evalNum(raw); if(v==null){ f.className='fb warn'; f.innerHTML='<b class="st">Hampir.</b>Tuliskan angka, misalnya 9π atau 9pi.'; return; }
+        const rel=Math.abs(v-q.ans.v)/q.ans.v; if(rel<1e-6 && /π|pi/i.test(raw)){ ok=true; msg=q.fbOk; } else if(rel<5e-3){ f.className='fb warn'; f.innerHTML='<b class="st">Hampir.</b>Nilainya tepat; tuliskan dalam bentuk eksak dengan π.'; return; }
+        else { const w=q.wrong.find(w=>Math.abs(v-w.v)/Math.abs(w.v)<1e-4); msg=(w?w.m+' ':'')+q.fbBad; } }
+      if(q.type==='build'){ const v=k=>$('#qb-'+k,box).value; if(['a','b','R','r'].some(k=>!v(k))){ f.className='fb warn'; f.innerHTML='<b class="st">Hampir.</b>Isi semua kotak terlebih dahulu.'; return; } ok=['a','b','R','r'].every(k=>v(k)===q.key[k]); msg= ok? q.fbOk : q.fbBad; }
+      if(q.type==='dnd'){ const placed={}; $$('.target',box).forEach(t=>{ const it=$('.item',t); placed[t.dataset.z]=it?it.dataset.i:null; }); if(Object.values(placed).some(x=>!x)){ f.className='fb warn'; f.innerHTML='<b class="st">Hampir.</b>Tempatkan ketiga bentuk pada metodenya.'; return; }
+        ok=Object.entries(placed).every(([k,v])=>k===v); $$('.target',box).forEach(t=>t.classList.add(placed[t.dataset.z]===t.dataset.z?'okk':'bad')); msg= ok? q.fbOk : q.fbBad; }
+      R[cur]=ok; q._last=msg; $('#qchk',box).hidden=true; $$('.opt,input,select,.item',box).forEach(x=>x.disabled=true);
+      fbSet(f,ok,msg); $$('.qdot',box).forEach((d,i)=>{ d.classList.toggle('okk',R[i]===true); d.classList.toggle('bad',R[i]===false); }); score(); });
+  }
+  function wireDnd(root){
+    let picked=null;
+    const pick=it=>{ picked=it; $$('.item',root).forEach(x=>x.setAttribute('aria-pressed',x===it)); };
+    $$('.item',root).forEach(it=>{ it.addEventListener('click',e=>{ e.stopPropagation(); pick(it); }); it.addEventListener('dragstart',e=>{ pick(it); e.dataTransfer.setData('text/plain',it.dataset.i); }); });
+    $$('.target,.pool',root).forEach(z=>{ const drop=()=>{ if(!picked) return; const ex=$('.item',z); if(ex && z.classList.contains('target')) $('.pool',root).appendChild(ex); z.appendChild(picked); picked.setAttribute('aria-pressed','false'); picked=null; };
+      z.addEventListener('click',drop); z.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); drop(); } });
+      z.addEventListener('dragover',e=>e.preventDefault()); z.addEventListener('drop',e=>{ e.preventDefault(); drop(); }); });
+  }
+  render(); score();
+  return {};
+}});
+
+/* ---------- 24 RANGKUMAN ---------- */
+SLIDES.push({ id:'s24', part:'V', title:'Dari Daerah Menjadi Volume Benda Putar', build(el){
+  el.innerHTML = head('V','','Dari Daerah Menjadi Volume Benda Putar','Delapan langkah yang sama berlaku untuk ketiga metode. Yang berubah hanya bentuk irisan dan parameter geometrisnya.')+
+  `<div class="sflow"><div>Daerah</div><div>Sumbu putar</div><div>Irisan</div><div>Penampang</div><div>Parameter geometris</div><div>Volume elemen ΔV</div><div>Integral</div><div>Volume total</div></div>
+  <div class="cols" style="margin-top:20px"><div class="stack">
+   <div class="formula"><span class="cap">Cakram</span>\\[V=\\pi\\int_a^b R^2\\,dx\\]</div>
+   <div class="formula"><span class="cap">Cincin</span>\\[V=\\pi\\int_a^b \\big(R^2-r^2\\big)\\,dx\\]</div>
+   <div class="formula"><span class="cap">Kulit tabung</span>\\[V=2\\pi\\int_a^b r\\,h\\,dx\\]</div>
+   <p style="font-size:15px;margin:0">Ganti dx dengan dy dan batas a, b dengan c, d bila irisan setebal Δy. Jari-jari selalu diukur dari sumbu putar.</p>
+   <div class="card plain"><span class="tag ctx">Konteks aplikasi</span><p style="margin:8px 0 0;font-size:15.5px">Bukan dari PDF. Pada proses bubut (<i>turning</i>) di manufaktur, benda kerja berputar terhadap sumbunya, sehingga produk jadinya berupa benda putar dari sebuah profil 2D. Volume bahan yang terbuang sama dengan volume bahan awal (tabung) dikurangi volume produk; keduanya dihitung dengan metode di modul ini.</p></div></div>
+  <div class="stack"><div class="card"><h3>Refleksi</h3><p>Bagaimana bentuk daerah, sumbu putar, dan orientasi irisan memengaruhi metode yang dipilih untuk menghitung volume benda putar?</p>
+   <label for="refl" class="lbl" style="font-size:13px;color:var(--muted);font-weight:700">Jawabanmu</label><textarea class="refl" id="refl" placeholder="Tuliskan dengan kata-katamu sendiri…"></textarea>
+   <div class="btns" style="margin-top:8px"><button class="btn sm primary" id="reflBtn">Simpan refleksi</button></div><div id="reflOut" style="margin-top:10px"></div></div>
+   <div class="card"><h3>Kemajuan belajarmu</h3><div class="stats" id="stats"></div><div class="btns" style="margin-top:10px" id="rstBox"><button class="btn sm" id="rst">Hapus kemajuan</button></div></div></div></div>`;
+  const ta=$('#refl',el); ta.value=P.reflection||'';
+  const model=()=>{ $('#reflOut',el).innerHTML=`<div class="fb ok"><b class="st">Tersimpan.</b>Bandingkan dengan jawaban model berikut.</div><p style="font-size:15.5px;margin-top:8px"><b>Jawaban model.</b> Irisan yang tegak lurus sumbu putar menghasilkan cakram bila daerah menempel pada sumbu, atau cincin bila ada celah di antaranya. Irisan yang sejajar sumbu menghasilkan kulit tabung. Pilih orientasi yang membuat jari-jari dan tinggi mudah ditulis sebagai fungsi satu variabel, tanpa harus membalik fungsi yang sulit; bila beberapa metode mungkin, pilih integral yang paling sederhana. Hasilnya harus sama, seperti 176π/15 pada contoh y = −1.</p>`; };
+  $('#reflBtn',el).addEventListener('click',()=>{ P.reflection=ta.value; saveP(); if(ta.value.trim().length>=20) markDone('s24'); model(); });
+  if(P.reflection) model();
+  const stats=()=>{ const act=['s02','s03','s04','s06','s07','s08','s10','s11','s12','s15','s16','s17','s18','s20','s21','s22','s23','s24']; const d=act.filter(a=>P.done.includes(a)).length;
+    $('#stats',el).innerHTML=`<div><b>${P.visited.length}/24</b><span>slide dikunjungi</span></div><div><b>${d}/${act.length}</b><span>aktivitas selesai</span></div><div><b>${P.quiz==null?'—':P.quiz+'/10'}</b><span>skor kuis</span></div><div><b>${P.hints}</b><span>petunjuk dibuka</span></div>`; };
+  const rb=$('#rstBox',el);
+  const wireRst=()=>{ $('#rst',el).addEventListener('click',()=>{ rb.innerHTML='<span style="font-size:15px">Hapus semua kemajuan di peramban ini?</span><button class="btn sm primary" id="rstY">Ya, hapus</button><button class="btn sm" id="rstN">Batal</button>';
+    $('#rstY',el).addEventListener('click',()=>{ P.visited=['s24']; P.done=[]; P.hints=0; P.quiz=null; P.reflection=''; saveP(); ta.value=''; $('#reflOut',el).innerHTML=''; App.refreshProgress(); stats(); rb.innerHTML='<button class="btn sm" id="rst">Hapus kemajuan</button>'; wireRst(); });
+    $('#rstN',el).addEventListener('click',()=>{ rb.innerHTML='<button class="btn sm" id="rst">Hapus kemajuan</button>'; wireRst(); }); }); };
+  wireRst();
+  return {enter(){ stats(); }};
+}});
+
+/* =========================================================
+   APP
+   ========================================================= */
+const App = {
+  cur:-1, els:[], ctl:[],
+  init(){
+    const main=$('#main');
+    SLIDES.forEach((s,i)=>{ const el=document.createElement('section'); el.className='slide'; el.id=s.id; el.hidden=true; el.setAttribute('aria-label',`Slide ${i+1}: ${s.title}`); main.appendChild(el); this.els.push(el); });
+    const segs=$('#segs'); segs.innerHTML=SLIDES.map((s,i)=>`<button class="seg" data-i="${i}" aria-label="Slide ${i+1}: ${esc(s.title)}" title="${String(i+1).padStart(2,'0')} · ${esc(s.title)}"></button>`).join('');
+    segs.addEventListener('click',e=>{ const b=e.target.closest('.seg'); if(b) this.go(+b.dataset.i); });
+    $('#btnPrev').addEventListener('click',()=>this.go(this.cur-1)); $('#btnNext').addEventListener('click',()=>this.go(this.cur+1));
+    const dlg=$('#menu'); $('#btnMenu').addEventListener('click',()=>{ this.renderMenu(); if(dlg.showModal) dlg.showModal(); else dlg.setAttribute('open',''); });
+    $('#btnMenuClose').addEventListener('click',()=>dlg.close()); dlg.addEventListener('click',e=>{ if(e.target===dlg) dlg.close(); });
+    document.addEventListener('keydown',e=>{ const a=document.activeElement, tag=a&&a.tagName; if(['INPUT','TEXTAREA','SELECT'].includes(tag) || dlg.open) return; if(e.key==='ArrowRight') this.go(this.cur+1); if(e.key==='ArrowLeft') this.go(this.cur-1); });
+    const themeUpd=()=>VIEWERS.forEach(v=>v.applyTheme());
+    if(window.matchMedia) matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUpd);
+    new MutationObserver(themeUpd).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    const h=location.hash.replace('#',''); const idx=SLIDES.findIndex(s=>s.id===h);
+    this.go(idx>=0?idx:0);
+    initMJ();
+  },
+  go(i){
+    if(i<0||i>=SLIDES.length||i===this.cur) return;
+    if(this.cur>=0){ const c=this.ctl[this.cur]; c&&c.leave&&c.leave(); this.els[this.cur].hidden=true; }
+    this.cur=i; const el=this.els[i];
+    if(!this.ctl[i]){ this.ctl[i]=SLIDES[i].build(el)||{}; typeset(el); }
+    el.hidden=false; const c=this.ctl[i]; c.enter&&c.enter();
+    if(!P.visited.includes(SLIDES[i].id)){ P.visited.push(SLIDES[i].id); saveP(); }
+    $('#main').scrollTop=0;
+    try{ history.replaceState(null,'','#'+SLIDES[i].id); }catch(e){}
+    $('#partLabel').textContent=PARTS[SLIDES[i].part];
+    $('#counter').textContent=String(i+1).padStart(2,'0')+' / 24';
+    $('#btnPrev').disabled=i===0; $('#btnNext').disabled=i===SLIDES.length-1;
+    this.refreshProgress();
+  },
+  refreshProgress(){ $$('.seg').forEach((b,i)=>{ const id=SLIDES[i].id; b.className='seg'+(P.done.includes(id)?' d':P.visited.includes(id)?' v':'')+(i===this.cur?' cur':''); }); },
+  renderMenu(){
+    const by={}; SLIDES.forEach((s,i)=>{ (by[s.part]=by[s.part]||[]).push([s,i]); });
+    $('#menuBody').innerHTML=Object.keys(PARTS).map(p=>`<div class="mpart"><h4>${PARTS[p]}</h4><ol>${by[p].map(([s,i])=>`<li><button data-i="${i}" class="${i===this.cur?'cur':''}"><span class="no">${String(i+1).padStart(2,'0')}</span><span>${esc(s.title)}</span><span class="st ${P.done.includes(s.id)?'d':''}">${P.done.includes(s.id)?'✓ selesai':P.visited.includes(s.id)?'dikunjungi':''}</span></button></li>`).join('')}</ol></div>`).join('');
+    $$('#menuBody button').forEach(b=>b.addEventListener('click',()=>{ $('#menu').close(); this.go(+b.dataset.i); }));
+  }
+};
+App.init();
+</script>
